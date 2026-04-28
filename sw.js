@@ -1,4 +1,4 @@
-const CACHE_NAME = 'keto-lite-clean-v1';
+const CACHE_NAME = 'keto-lite-cloud-v1';
 const ASSETS = [
   './',
   './index.html',
