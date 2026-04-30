@@ -101,6 +101,8 @@
 
     const today = getLocalDateString(new Date());
 
+    const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+
     const defaultGoals = {
       calories: 2000,
       protein: 160,
@@ -120,7 +122,7 @@
     function normalizeFood(food) {
       if (!food || typeof food !== "object") return null;
 
-      const id = String(food.id || `${Date.now()}_${Math.random().toString(36).slice(2)}`);
+      const id = String(food.id || makeId());
       const name = String(food.name || food.title || food.product || food["название"] || food["продукт"] || "").trim();
 
       if (!name) return null;
@@ -146,7 +148,19 @@
 
     function normalizeFoods(value) {
       if (!Array.isArray(value)) return defaultFoods;
-      const normalized = value.map(normalizeFood).filter(Boolean);
+
+      const usedIds = new Set();
+      const normalized = value.map(normalizeFood).filter(Boolean).map(food => {
+        let id = String(food.id || makeId());
+
+        if (usedIds.has(id)) {
+          id = makeId();
+        }
+
+        usedIds.add(id);
+        return { ...food, id };
+      });
+
       return normalized.length ? normalized : defaultFoods;
     }
 
@@ -535,7 +549,7 @@
           return true;
         }
 
-        setFoods(prev => [...prev, { ...normalized, id: Date.now().toString() }]);
+        setFoods(prev => [...prev, { ...normalized, id: normalized.id || makeId() }]);
         return true;
       }
 
@@ -550,7 +564,7 @@
         const calculated = calcFood(food, grams);
 
         const newLog = {
-          id: Date.now().toString(),
+          id: makeId(),
           foodId: food.id,
           foodName: food.name,
           grams,
@@ -577,8 +591,11 @@
       }
 
       function startEditLog(log) {
+        const foodExists = foods.some(f => f.id === log.foodId);
+        const fallbackFood = foods.find(f => f.name === log.foodName);
+
         setEditingLogId(log.id);
-        setEditingLog({ foodId: log.foodId, grams: String(log.grams) });
+        setEditingLog({ foodId: foodExists ? log.foodId : (fallbackFood?.id || ""), grams: String(log.grams) });
       }
 
       function saveEditLog() {
@@ -670,9 +687,17 @@
       function saveEditFood() {
         if (!editingFood?.name?.trim()) return;
 
+        const newName = editingFood.name.trim();
+        const duplicate = foods.find(f => f.id !== editingFoodId && f.name.trim().toLowerCase() === newName.toLowerCase());
+
+        if (duplicate) {
+          alert(`Продукт «${newName}» уже есть в базе. Выбери другое название или отредактируй существующий.`);
+          return;
+        }
+
         setFoods(prev => prev.map(f => f.id === editingFoodId ? {
           ...f,
-          name: editingFood.name.trim(),
+          name: newName,
           calories: num(editingFood.calories),
           protein: num(editingFood.protein),
           fat: num(editingFood.fat),
@@ -691,6 +716,10 @@
 
         if (selectedFoodId === foodId) setSelectedFoodId("");
         if (editingLog.foodId === foodId) setEditingLog({ foodId: "", grams: editingLog.grams });
+        if (editingFoodId === foodId) {
+          setEditingFoodId(null);
+          setEditingFood(null);
+        }
       }
 
       function changeDate(offset) {
@@ -702,7 +731,7 @@
 
       function exportBackup() {
         const data = {
-          version: 2,
+          version: 7,
           goals,
           foods,
           dailyLogs,
@@ -726,9 +755,9 @@
         reader.onload = () => {
           try {
             const data = JSON.parse(reader.result);
-            if (data.goals) setGoals(data.goals);
-            if (data.foods) setFoods(data.foods);
-            if (data.dailyLogs) setDailyLogs(data.dailyLogs);
+            if (data.goals) setGoals(normalizeGoals(data.goals));
+            if (data.foods) setFoods(normalizeFoods(data.foods));
+            if (data.dailyLogs) setDailyLogs(normalizeLogs(data.dailyLogs));
             alert("Backup восстановлен");
           } catch {
             alert("Не получилось прочитать backup");
