@@ -103,7 +103,7 @@
     const today = todayKey();
 
     const defaultState = () => ({
-      appVersion: 13,
+      appVersion: 14,
       foods: [
         { id: "f1", name: "Куриное филе", calories: 113, protein: 23.6, fat: 1.9, carbs: 0 },
         { id: "f2", name: "Гречка варёная", calories: 132, protein: 4.5, fat: 1.3, carbs: 25 },
@@ -137,7 +137,7 @@
       return {
         ...fresh,
         ...s,
-        appVersion: 13,
+        appVersion: 14,
         foods: Array.isArray(s.foods) && s.foods.length ? s.foods : fresh.foods,
         foodLogsByDate: s.foodLogsByDate || {},
         goalsByDate: s.goalsByDate || fresh.goalsByDate,
@@ -573,6 +573,12 @@
         });
       }
 
+      function toggleExerciseDone(ex) {
+        const target = getTarget(ex);
+        const actual = getActual(ex);
+        updateExerciseActual(ex.id, actual >= target && target > 0 ? "" : String(target));
+      }
+
       function saveNewExercise(e) {
         e.preventDefault();
 
@@ -665,7 +671,7 @@
       function exportBackup() {
         const backup = {
           ...state,
-          appVersion: 13,
+          appVersion: 14,
           exportedAt: new Date().toISOString(),
           currentDate
         };
@@ -885,36 +891,6 @@
 
             {activeTab === "food" && (
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-3">
-                  <SectionButton icon={<IconBook className="w-5 h-5" />} label="База продуктов" color="indigo" onClick={() => setShowFoodBase(!showFoodBase)} />
-                  <SectionButton icon={<IconSettings className="w-5 h-5" />} label="Данные дня" color="zinc" onClick={() => setShowDaySettings(!showDaySettings)} />
-                </div>
-
-                {showDaySettings && (
-                  <DaySettings
-                    goals={goals}
-                    measures={measures}
-                    updateGoalsForDate={updateGoalsForDate}
-                    updateMeasurement={updateMeasurement}
-                  />
-                )}
-
-                {showFoodBase && (
-                  <FoodBase
-                    foods={state.foods}
-                    newFood={newFood}
-                    setNewFood={setNewFood}
-                    saveNewFood={saveNewFood}
-                    editingFoodId={editingFoodId}
-                    editingFood={editingFood}
-                    setEditingFood={setEditingFood}
-                    startEditFood={startEditFood}
-                    saveEditFood={saveEditFood}
-                    cancelEdit={() => { setEditingFoodId(null); setEditingFood(null); }}
-                    deleteFood={deleteFood}
-                  />
-                )}
-
                 <form onSubmit={addFoodLog} className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
                   <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Добавить еду</h2>
 
@@ -1028,14 +1004,125 @@
                     </div>
                   ))}
                 </div>
+
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Дополнительно</h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    <SectionButton icon={<IconBook className="w-5 h-5" />} label="База продуктов" color="indigo" onClick={() => setShowFoodBase(!showFoodBase)} />
+                    <SectionButton icon={<IconSettings className="w-5 h-5" />} label="Данные дня" color="zinc" onClick={() => setShowDaySettings(!showDaySettings)} />
+                  </div>
+                </div>
+
+                {showDaySettings && (
+                  <DaySettings
+                    goals={goals}
+                    measures={measures}
+                    updateGoalsForDate={updateGoalsForDate}
+                    updateMeasurement={updateMeasurement}
+                  />
+                )}
+
+                {showFoodBase && (
+                  <FoodBase
+                    foods={state.foods}
+                    newFood={newFood}
+                    setNewFood={setNewFood}
+                    saveNewFood={saveNewFood}
+                    editingFoodId={editingFoodId}
+                    editingFood={editingFood}
+                    setEditingFood={setEditingFood}
+                    startEditFood={startEditFood}
+                    saveEditFood={saveEditFood}
+                    cancelEdit={() => { setEditingFoodId(null); setEditingFood(null); }}
+                    deleteFood={deleteFood}
+                  />
+                )}
               </div>
             )}
 
             {activeTab === "training" && (
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-3">
-                  <SectionButton icon={<IconDumbbell className="w-5 h-5" />} label="Настроить план" color="amber" onClick={() => setShowTrainingBase(!showTrainingBase)} />
-                  <SectionButton icon={<IconSettings className="w-5 h-5" />} label="Данные дня" color="zinc" onClick={() => setShowDaySettings(!showDaySettings)} />
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50">
+                  <div className="flex justify-between items-end mb-4">
+                    <div>
+                      <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                        <IconDumbbell className="w-4 h-4" /> Тренировка дня
+                      </h2>
+                      <div className="text-4xl font-black text-amber-400 mt-2">{Math.round(trainingSummary.avg)}%</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-amber-400 font-black">{trainingSummary.completed}/{trainingSummary.total}</div>
+                      <div className="text-[9px] text-zinc-500 font-bold uppercase">готово</div>
+                    </div>
+                  </div>
+                  <ProgressBar value={trainingSummary.avg} color="amber" />
+                </div>
+
+                <div className="bg-[#18181b] rounded-3xl p-4 border border-zinc-800/50">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2 mb-3">
+                    <IconDumbbell className="w-4 h-4" /> Быстрый ввод
+                  </h2>
+
+                  <div className="space-y-2">
+                    {currentTraining.map(ex => {
+                      const target = getTarget(ex);
+                      const actual = getActual(ex);
+                      const color = unitColor(ex.unit);
+                      const percentDone = pct(actual, target);
+                      const done = target > 0 && actual >= target;
+
+                      return (
+                        <div key={ex.id} className={`rounded-2xl p-3 border ${done ? "bg-emerald-500/10 border-emerald-500/30" : "bg-[#27272a] border-zinc-700/40"}`}>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => toggleExerciseDone(ex)}
+                              className={`w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center text-xl font-black transition-transform active:scale-95 ${done ? "bg-emerald-600 text-white" : "bg-zinc-900 text-zinc-700 border border-zinc-700"}`}
+                            >
+                              {done ? "✓" : ""}
+                            </button>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex justify-between items-center gap-2 mb-2">
+                                <div className="min-w-0">
+                                  <h3 className="text-sm font-black truncate">{ex.title}</h3>
+                                  <p className="text-[10px] text-zinc-500 font-bold uppercase">
+                                    цель: {round(target, 0)} {unitLabel(ex.unit)}
+                                  </p>
+                                </div>
+                                <div className={`text-right ${colorClass(color, "text")} font-black shrink-0`}>
+                                  <div className="text-sm">{round(actual, 0)}/{round(target, 0)}</div>
+                                  <div className="text-[9px] uppercase">{Math.round(percentDone)}%</div>
+                                </div>
+                              </div>
+                              <ProgressBar value={percentDone} color={done ? "emerald" : color} />
+                            </div>
+
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              placeholder="0"
+                              className={`w-20 shrink-0 bg-zinc-900 rounded-xl p-3 text-center ${colorClass(color, "text")} font-black outline-none`}
+                              value={ex.actual || ""}
+                              onChange={(e) => updateExerciseActual(ex.id, e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <p className="text-xs text-zinc-500 leading-relaxed mt-4">
+                    Галочка = дневная норма выполнена. Если сделал частично — впиши число справа.
+                  </p>
+                </div>
+
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Дополнительно</h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    <SectionButton icon={<IconDumbbell className="w-5 h-5" />} label="Настроить план" color="amber" onClick={() => setShowTrainingBase(!showTrainingBase)} />
+                    <SectionButton icon={<IconSettings className="w-5 h-5" />} label="Данные дня" color="zinc" onClick={() => setShowDaySettings(!showDaySettings)} />
+                  </div>
                 </div>
 
                 {showDaySettings && (
@@ -1063,70 +1150,9 @@
                     applyTemplateToCurrentDay={applyTemplateToCurrentDay}
                   />
                 )}
-
-                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50">
-                  <div className="flex justify-between items-end mb-4">
-                    <div>
-                      <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                        <IconDumbbell className="w-4 h-4" /> Тренировка дня
-                      </h2>
-                      <div className="text-4xl font-black text-amber-400 mt-2">{Math.round(trainingSummary.avg)}%</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-amber-400 font-black">{trainingSummary.completed}/{trainingSummary.total}</div>
-                      <div className="text-[9px] text-zinc-500 font-bold uppercase">готово</div>
-                    </div>
-                  </div>
-                  <ProgressBar value={trainingSummary.avg} color="amber" />
-                </div>
-
-                <div className="space-y-4">
-                  {currentTraining.map(ex => {
-                    const target = getTarget(ex);
-                    const actual = getActual(ex);
-                    const color = unitColor(ex.unit);
-                    const percentDone = pct(actual, target);
-
-                    return (
-                      <div key={ex.id} className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50">
-                        <div className="flex justify-between items-start gap-3 mb-4">
-                          <div>
-                            <h3 className="text-base font-black">{ex.title}</h3>
-                            <p className="text-[10px] text-zinc-500 font-bold uppercase">
-                              цель: {round(target, 0)} {unitLabel(ex.unit)}
-                            </p>
-                          </div>
-
-                          <div className={`text-right ${colorClass(color, "text")} font-black`}>
-                            <div className="text-lg">{Math.round(percentDone)}%</div>
-                            <div className="text-[9px] uppercase">{round(actual, 0)}/{round(target, 0)}</div>
-                          </div>
-                        </div>
-
-                        <ProgressBar value={percentDone} color={color} />
-
-                        <div className="mt-4">
-                          <span className="text-[9px] text-zinc-500 font-bold block mb-1">
-                            СДЕЛАНО · вводи общую сумму
-                          </span>
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            placeholder="0"
-                            className={`w-full bg-[#27272a] rounded-xl p-4 ${colorClass(color, "text")} font-black text-lg outline-none min-w-0`}
-                            value={ex.actual || ""}
-                            onChange={(e) => updateExerciseActual(ex.id, e.target.value)}
-                          />
-                          <p className="text-xs text-zinc-500 mt-2">
-                            Например: цель 30 отжиманий. Сделал 10 — вписал 10. Сделал ещё 10 — заменил на 20.
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
             )}
+
           </main>
 
           <nav className="shrink-0 bg-[#18181b] border-t border-zinc-800 grid grid-cols-3 pt-2 safe-pb relative z-40">
