@@ -26,37 +26,13 @@
       -webkit-tap-highlight-color: transparent;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
     }
-
-    ::-webkit-scrollbar {
-      width: 0;
-      height: 0;
-      background: transparent;
-    }
-
-    .safe-pt {
-      padding-top: max(32px, env(safe-area-inset-top));
-    }
-
-    .safe-pb {
-      padding-bottom: max(16px, env(safe-area-inset-bottom));
-    }
-
-    .fast-touch {
-      touch-action: manipulation;
-    }
-
-    .app-shell {
-      height: 100dvh;
-      min-height: 100dvh;
-    }
-
-    input, select, textarea {
-      font-size: 16px;
-    }
-
-    select {
-      background-image: none;
-    }
+    ::-webkit-scrollbar { width: 0; height: 0; background: transparent; }
+    .safe-pt { padding-top: max(32px, env(safe-area-inset-top)); }
+    .safe-pb { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+    .fast-touch { touch-action: manipulation; }
+    .app-shell { height: 100dvh; min-height: 100dvh; }
+    input, select, textarea { font-size: 16px; }
+    select { background-image: none; }
   </style>
 </head>
 
@@ -74,7 +50,6 @@
     const IconTrash = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"/></svg>;
     const IconTarget = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
     const IconDumbbell = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>;
-    const IconFootprints = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 16v-2.38c0-.91.64-1.7 1.53-1.87l1.25-.24c.68-.13 1.35.25 1.59.9l.56 1.52A2.4 2.4 0 0 1 7.22 17L6 17.5A1.45 1.45 0 0 1 4 16Z"/><path d="M10 20.5v-2.38c0-.91.64-1.7 1.53-1.87l1.25-.24c.68-.13 1.35.25 1.59.9l.56 1.52A2.4 2.4 0 0 1 13.22 21L12 21.5a1.45 1.45 0 0 1-2-1Z"/><path d="M14 4.5v2.38c0 .91.64 1.7 1.53 1.87l1.25.24c.68.13 1.35-.25 1.59-.9l.56-1.52A2.4 2.4 0 0 0 17.22 3L16 2.5a1.45 1.45 0 0 0-2 2Z"/></svg>;
     const IconScale = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>;
     const IconDownload = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>;
     const IconEdit = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>;
@@ -82,19 +57,21 @@
 
     const STORAGE_KEY = "kbju_tracker_v12_single_state";
 
+    const todayKey = () => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+
     const getLocalDateString = (dateObj) => {
-      const year = dateObj.getFullYear();
-      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-      const day = String(dateObj.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
+      return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}-${String(dateObj.getDate()).padStart(2, "0")}`;
     };
 
     const displayDate = (dateString) => {
       const [year, month, day] = dateString.split("-");
       const d = new Date(year, month - 1, day);
-      const todayStr = getLocalDateString(new Date());
+      const today = todayKey();
 
-      if (dateString === todayStr) return "Сегодня";
+      if (dateString === today) return "Сегодня";
 
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
@@ -123,11 +100,10 @@
     };
 
     const sum = (arr) => (arr || []).reduce((a, b) => a + num(b), 0);
-
-    const today = getLocalDateString(new Date());
+    const today = todayKey();
 
     const defaultState = () => ({
-      appVersion: 12,
+      appVersion: 13,
       foods: [
         { id: "f1", name: "Куриное филе", calories: 113, protein: 23.6, fat: 1.9, carbs: 0 },
         { id: "f2", name: "Гречка варёная", calories: 132, protein: 4.5, fat: 1.3, carbs: 25 },
@@ -144,29 +120,88 @@
         [today]: { weight: "", waist: "" }
       },
       trainingTemplate: [
-        { id: "e_push", title: "Отжимания", unit: "reps", targets: [10, 10, 10] },
-        { id: "e_squat", title: "Приседания", unit: "reps", targets: [15, 15, 15] },
-        { id: "e_pull", title: "Подтягивания / негативы", unit: "reps", targets: [3, 3, 3] },
-        { id: "e_plank", title: "Планка", unit: "sec", targets: [30, 30, 30] },
-        { id: "e_abs", title: "Пресс", unit: "reps", targets: [15, 15, 15] },
-        { id: "e_steps", title: "Ходьба", unit: "steps", targets: [7000] }
+        { id: "e_push", title: "Отжимания", unit: "reps", target: 30 },
+        { id: "e_squat", title: "Приседания", unit: "reps", target: 45 },
+        { id: "e_pull", title: "Подтягивания / негативы", unit: "reps", target: 9 },
+        { id: "e_plank", title: "Планка", unit: "sec", target: 90 },
+        { id: "e_abs", title: "Пресс", unit: "reps", target: 45 },
+        { id: "e_steps", title: "Ходьба", unit: "steps", target: 7000 }
       ],
       trainingsByDate: {}
     });
+
+    function normalizeLoadedState(raw) {
+      const fresh = defaultState();
+      const s = raw || fresh;
+
+      return {
+        ...fresh,
+        ...s,
+        appVersion: 13,
+        foods: Array.isArray(s.foods) && s.foods.length ? s.foods : fresh.foods,
+        foodLogsByDate: s.foodLogsByDate || {},
+        goalsByDate: s.goalsByDate || fresh.goalsByDate,
+        measurementsByDate: s.measurementsByDate || fresh.measurementsByDate,
+        trainingTemplate: Array.isArray(s.trainingTemplate) && s.trainingTemplate.length
+          ? s.trainingTemplate.map(normalizeTemplateExercise)
+          : fresh.trainingTemplate,
+        trainingsByDate: normalizeTrainingsByDate(s.trainingsByDate || {})
+      };
+    }
+
+    function normalizeTemplateExercise(ex) {
+      return {
+        id: ex.id || String(Date.now() + Math.random()),
+        title: ex.title || "Упражнение",
+        unit: ex.unit || "reps",
+        target: getTarget(ex)
+      };
+    }
+
+    function normalizeDayExercise(ex) {
+      return {
+        id: ex.id || String(Date.now() + Math.random()),
+        templateId: ex.templateId || ex.id || String(Date.now() + Math.random()),
+        title: ex.title || "Упражнение",
+        unit: ex.unit || "reps",
+        target: getTarget(ex),
+        actual: getActual(ex) || ""
+      };
+    }
+
+    function normalizeTrainingsByDate(map) {
+      const out = {};
+      Object.keys(map || {}).forEach(date => {
+        out[date] = (map[date] || []).map(normalizeDayExercise);
+      });
+      return out;
+    }
+
+    function getTarget(ex) {
+      if (ex?.target !== undefined) return num(ex.target);
+      if (Array.isArray(ex?.targets)) return sum(ex.targets);
+      return 0;
+    }
+
+    function getActual(ex) {
+      if (ex?.actual !== undefined) return num(ex.actual);
+      if (Array.isArray(ex?.actuals)) return sum(ex.actuals);
+      return 0;
+    }
 
     function cloneExercise(ex) {
       return {
         id: `${ex.id}_${Date.now()}_${Math.random().toString(36).slice(2)}`,
         templateId: ex.id,
         title: ex.title,
-        unit: ex.unit,
-        targets: [...(ex.targets || [])],
-        actuals: (ex.targets || []).map(() => "")
+        unit: ex.unit || "reps",
+        target: getTarget(ex),
+        actual: ""
       };
     }
 
     function cloneTemplate(template) {
-      return template.map(cloneExercise);
+      return (template || []).map(cloneExercise);
     }
 
     function unitLabel(unit) {
@@ -183,11 +218,11 @@
 
     function colorClass(color, type = "text") {
       const map = {
-        emerald: { text: "text-emerald-400", bg: "bg-emerald-500", border: "border-emerald-500/30" },
-        indigo: { text: "text-indigo-400", bg: "bg-indigo-500", border: "border-indigo-500/30" },
-        amber: { text: "text-amber-400", bg: "bg-amber-500", border: "border-amber-500/30" },
-        sky: { text: "text-sky-400", bg: "bg-sky-500", border: "border-sky-500/30" },
-        rose: { text: "text-rose-400", bg: "bg-rose-500", border: "border-rose-500/30" }
+        emerald: { text: "text-emerald-400", bg: "bg-emerald-500" },
+        indigo: { text: "text-indigo-400", bg: "bg-indigo-500" },
+        amber: { text: "text-amber-400", bg: "bg-amber-500" },
+        sky: { text: "text-sky-400", bg: "bg-sky-500" },
+        rose: { text: "text-rose-400", bg: "bg-rose-500" }
       };
       return map[color]?.[type] || map.emerald[type];
     }
@@ -195,6 +230,12 @@
     function getPreviousDateKey(map, date) {
       const keys = Object.keys(map || {}).filter(k => k <= date).sort();
       return keys.length ? keys[keys.length - 1] : null;
+    }
+
+    function getGoalsFromState(source, date) {
+      if (source.goalsByDate?.[date]) return source.goalsByDate[date];
+      const prevKey = getPreviousDateKey(source.goalsByDate, date);
+      return prevKey ? source.goalsByDate[prevKey] : { calories: 2100, protein: 160, fat: 70, carbs: 150 };
     }
 
     function ProgressBar({ value, color = "emerald" }) {
@@ -249,7 +290,7 @@
     function App() {
       const [state, setState] = useState(() => {
         try {
-          return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultState();
+          return normalizeLoadedState(JSON.parse(localStorage.getItem(STORAGE_KEY)));
         } catch {
           return defaultState();
         }
@@ -269,40 +310,16 @@
       const [editingFoodId, setEditingFoodId] = useState(null);
       const [editingFood, setEditingFood] = useState(null);
 
-      const [newExercise, setNewExercise] = useState({ title: "", unit: "reps", targets: "10,10,10" });
+      const [editingLogId, setEditingLogId] = useState(null);
+      const [editingLog, setEditingLog] = useState({ foodName: "", grams: "" });
+
+      const [newExercise, setNewExercise] = useState({ title: "", unit: "reps", target: "30" });
       const [editingExerciseId, setEditingExerciseId] = useState(null);
       const [editingExercise, setEditingExercise] = useState(null);
 
       useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       }, [state]);
-
-      function getGoalsForDate(date) {
-        if (state.goalsByDate?.[date]) return state.goalsByDate[date];
-
-        const prevKey = getPreviousDateKey(state.goalsByDate, date);
-        const fallback = prevKey ? state.goalsByDate[prevKey] : { calories: 2100, protein: 160, fat: 70, carbs: 150 };
-
-        return { ...fallback };
-      }
-
-      function ensureGoalsForDate(date) {
-        if (state.goalsByDate?.[date]) return;
-
-        const newGoals = getGoalsForDate(date);
-
-        setState(prev => ({
-          ...prev,
-          goalsByDate: {
-            ...(prev.goalsByDate || {}),
-            [date]: newGoals
-          }
-        }));
-      }
-
-      function getMeasurementsForDate(date) {
-        return state.measurementsByDate?.[date] || { weight: "", waist: "" };
-      }
 
       function getTrainingForDate(date) {
         if (state.trainingsByDate?.[date]) return state.trainingsByDate[date];
@@ -322,22 +339,21 @@
       }
 
       useEffect(() => {
-        ensureGoalsForDate(currentDate);
         ensureTrainingForDate(currentDate);
       }, [currentDate]);
 
-      const goals = getGoalsForDate(currentDate);
-      const measures = getMeasurementsForDate(currentDate);
+      const goals = getGoalsFromState(state, currentDate);
+      const measures = state.measurementsByDate?.[currentDate] || { weight: "", waist: "" };
       const currentTraining = getTrainingForDate(currentDate);
       const currentDayLogs = state.foodLogsByDate?.[currentDate] || [];
 
       const totals = useMemo(() => {
-        return currentDayLogs.reduce((sum, log) => {
-          sum.calories += num(log.totalCalories);
-          sum.protein += num(log.totalProtein);
-          sum.fat += num(log.totalFat);
-          sum.carbs += num(log.totalCarbs);
-          return sum;
+        return currentDayLogs.reduce((sumObj, log) => {
+          sumObj.calories += num(log.totalCalories);
+          sumObj.protein += num(log.totalProtein);
+          sumObj.fat += num(log.totalFat);
+          sumObj.carbs += num(log.totalCarbs);
+          return sumObj;
         }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
       }, [currentDayLogs]);
 
@@ -350,13 +366,13 @@
 
       const trainingSummary = useMemo(() => {
         const items = currentTraining || [];
-        const exerciseProgresses = items.map(ex => {
-          const target = sum(ex.targets);
-          const actual = sum(ex.actuals);
+        const progresses = items.map(ex => {
+          const target = getTarget(ex);
+          const actual = getActual(ex);
           return target ? Math.min(100, (actual / target) * 100) : 0;
         });
-        const avg = exerciseProgresses.length ? exerciseProgresses.reduce((a,b) => a + b, 0) / exerciseProgresses.length : 0;
-        const completed = exerciseProgresses.filter(x => x >= 100).length;
+        const avg = progresses.length ? progresses.reduce((a, b) => a + b, 0) / progresses.length : 0;
+        const completed = progresses.filter(x => x >= 100).length;
         return { avg, completed, total: items.length };
       }, [currentTraining]);
 
@@ -370,11 +386,15 @@
         };
       }
 
+      function findFoodByName(name) {
+        const clean = String(name || "").trim().toLowerCase();
+        return state.foods.find(f => f.name.trim().toLowerCase() === clean);
+      }
+
       function addFoodLog(e) {
         e.preventDefault();
 
-        const clean = foodNameInput.trim().toLowerCase();
-        const food = state.foods.find(f => f.name.trim().toLowerCase() === clean);
+        const food = findFoodByName(foodNameInput);
         const grams = num(gramsInput);
 
         if (!food) {
@@ -417,6 +437,45 @@
             [currentDate]: (prev.foodLogsByDate?.[currentDate] || []).filter(l => l.id !== logId)
           }
         }));
+      }
+
+      function startEditLog(log) {
+        setEditingLogId(log.id);
+        setEditingLog({ foodName: log.foodName, grams: String(log.grams) });
+      }
+
+      function saveEditLog() {
+        const food = findFoodByName(editingLog.foodName);
+        const grams = num(editingLog.grams);
+
+        if (!food) {
+          alert("Такого продукта нет в базе.");
+          return;
+        }
+
+        if (!grams) return;
+
+        const calculated = calcFood(food, grams);
+
+        setState(prev => ({
+          ...prev,
+          foodLogsByDate: {
+            ...(prev.foodLogsByDate || {}),
+            [currentDate]: (prev.foodLogsByDate?.[currentDate] || []).map(log => log.id === editingLogId ? {
+              ...log,
+              foodId: food.id,
+              foodName: food.name,
+              grams,
+              totalCalories: calculated.calories,
+              totalProtein: calculated.protein,
+              totalFat: calculated.fat,
+              totalCarbs: calculated.carbs
+            } : log)
+          }
+        }));
+
+        setEditingLogId(null);
+        setEditingLog({ foodName: "", grams: "" });
       }
 
       function saveNewFood(e) {
@@ -486,13 +545,6 @@
         }));
       }
 
-      function getGoalsFromState(source, date) {
-        if (source.goalsByDate?.[date]) return source.goalsByDate[date];
-
-        const prevKey = getPreviousDateKey(source.goalsByDate, date);
-        return prevKey ? source.goalsByDate[prevKey] : { calories: 2100, protein: 160, fat: 70, carbs: 150 };
-      }
-
       function updateMeasurement(key, value) {
         setState(prev => ({
           ...prev,
@@ -506,15 +558,10 @@
         }));
       }
 
-      function updateExerciseActual(exId, index, value) {
+      function updateExerciseActual(exId, value) {
         setState(prev => {
           const dayList = prev.trainingsByDate?.[currentDate] || cloneTemplate(prev.trainingTemplate || []);
-          const updated = dayList.map(ex => {
-            if (ex.id !== exId) return ex;
-            const actuals = [...(ex.actuals || [])];
-            actuals[index] = value;
-            return { ...ex, actuals };
-          });
+          const updated = dayList.map(ex => ex.id === exId ? { ...ex, actual: value } : ex);
 
           return {
             ...prev,
@@ -531,53 +578,61 @@
 
         if (!newExercise.title.trim()) return;
 
-        const targets = parseTargets(newExercise.targets);
+        const id = Date.now().toString();
+        const templateExercise = {
+          id,
+          title: newExercise.title.trim(),
+          unit: newExercise.unit,
+          target: num(newExercise.target)
+        };
 
-        setState(prev => ({
-          ...prev,
-          trainingTemplate: [
-            ...(prev.trainingTemplate || []),
-            {
-              id: Date.now().toString(),
-              title: newExercise.title.trim(),
-              unit: newExercise.unit,
-              targets
+        setState(prev => {
+          const dayList = prev.trainingsByDate?.[currentDate] || cloneTemplate(prev.trainingTemplate || []);
+
+          return {
+            ...prev,
+            trainingTemplate: [...(prev.trainingTemplate || []), templateExercise],
+            trainingsByDate: {
+              ...(prev.trainingsByDate || {}),
+              [currentDate]: [...dayList, cloneExercise(templateExercise)]
             }
-          ]
-        }));
+          };
+        });
 
         setNewExercise({
           title: "",
           unit: "reps",
-          targets: newExercise.unit === "steps" ? "7000" : "10,10,10"
+          target: "30"
         });
-      }
-
-      function parseTargets(raw) {
-        return String(raw || "")
-          .split(",")
-          .map(x => num(x.trim()))
-          .filter(x => x > 0);
       }
 
       function startEditExercise(ex) {
         setEditingExerciseId(ex.id);
-        setEditingExercise({ ...ex, targetsText: (ex.targets || []).join(",") });
+        setEditingExercise({ ...ex, target: getTarget(ex) });
       }
 
       function saveEditExercise() {
         if (!editingExercise?.title?.trim()) return;
 
-        const targets = parseTargets(editingExercise.targetsText);
+        const updatedTemplate = {
+          id: editingExerciseId,
+          title: editingExercise.title.trim(),
+          unit: editingExercise.unit,
+          target: num(editingExercise.target)
+        };
 
         setState(prev => ({
           ...prev,
-          trainingTemplate: prev.trainingTemplate.map(ex => ex.id === editingExerciseId ? {
-            ...ex,
-            title: editingExercise.title.trim(),
-            unit: editingExercise.unit,
-            targets
-          } : ex)
+          trainingTemplate: prev.trainingTemplate.map(ex => ex.id === editingExerciseId ? updatedTemplate : ex),
+          trainingsByDate: {
+            ...(prev.trainingsByDate || {}),
+            [currentDate]: (prev.trainingsByDate?.[currentDate] || cloneTemplate(prev.trainingTemplate || [])).map(ex => ex.templateId === editingExerciseId ? {
+              ...ex,
+              title: updatedTemplate.title,
+              unit: updatedTemplate.unit,
+              target: updatedTemplate.target
+            } : ex)
+          }
         }));
 
         setEditingExerciseId(null);
@@ -587,12 +642,16 @@
       function deleteExercise(exId) {
         setState(prev => ({
           ...prev,
-          trainingTemplate: prev.trainingTemplate.filter(ex => ex.id !== exId)
+          trainingTemplate: prev.trainingTemplate.filter(ex => ex.id !== exId),
+          trainingsByDate: {
+            ...(prev.trainingsByDate || {}),
+            [currentDate]: (prev.trainingsByDate?.[currentDate] || []).filter(ex => ex.templateId !== exId)
+          }
         }));
       }
 
       function applyTemplateToCurrentDay() {
-        if (!confirm("Заменить тренировку этого дня новым шаблоном? Уже введённые подходы за этот день сотрутся.")) return;
+        if (!confirm("Заменить тренировку этого дня новым шаблоном? Введённый прогресс за этот день сотрётся.")) return;
 
         setState(prev => ({
           ...prev,
@@ -606,6 +665,7 @@
       function exportBackup() {
         const backup = {
           ...state,
+          appVersion: 13,
           exportedAt: new Date().toISOString(),
           currentDate
         };
@@ -628,7 +688,7 @@
         reader.onload = () => {
           try {
             const data = JSON.parse(reader.result);
-            setState(data);
+            setState(normalizeLoadedState(data));
             alert("Backup восстановлен");
           } catch {
             alert("Не получилось прочитать backup");
@@ -645,6 +705,7 @@
         setShowFoodBase(false);
         setShowTrainingBase(false);
         setShowDaySettings(false);
+        setEditingLogId(null);
       }
 
       function goToday() {
@@ -652,9 +713,10 @@
         setShowFoodBase(false);
         setShowTrainingBase(false);
         setShowDaySettings(false);
+        setEditingLogId(null);
       }
 
-      const previewFood = state.foods.find(f => f.name.trim().toLowerCase() === foodNameInput.trim().toLowerCase());
+      const previewFood = findFoodByName(foodNameInput);
       const preview = previewFood && gramsInput ? calcFood(previewFood, gramsInput) : null;
 
       return (
@@ -756,8 +818,8 @@
 
                   <div className="space-y-4">
                     {currentTraining.map(ex => {
-                      const target = sum(ex.targets);
-                      const actual = sum(ex.actuals);
+                      const target = getTarget(ex);
+                      const actual = getActual(ex);
                       const color = unitColor(ex.unit);
 
                       return (
@@ -815,7 +877,7 @@
                   </label>
 
                   <p className="text-xs text-zinc-500 leading-relaxed">
-                    Скачай этот JSON и скинь сюда — я смогу разобрать вес, талию, КБЖУ, еду и тренировки по датам.
+                    Скачай JSON и скинь сюда — я смогу разобрать вес, талию, КБЖУ, еду и тренировки по датам.
                   </p>
                 </div>
               </div>
@@ -906,26 +968,63 @@
                   )}
 
                   {currentDayLogs.map(log => (
-                    <div key={log.id} className="bg-[#18181b] rounded-2xl p-4 flex justify-between items-center border border-zinc-800/30">
-                      <div className="min-w-0">
-                        <p className="font-bold text-sm truncate">{log.foodName}</p>
-                        <p className="text-[10px] text-zinc-500 font-bold uppercase">{log.grams} г</p>
-                      </div>
+                    <div key={log.id} className="bg-[#18181b] rounded-2xl p-4 border border-zinc-800/30">
+                      {editingLogId === log.id ? (
+                        <div className="space-y-3">
+                          <div>
+                            <span className="text-[9px] text-zinc-500 font-bold block mb-1">ПРОДУКТ</span>
+                            <input
+                              list="foodOptions"
+                              type="text"
+                              className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-zinc-200"
+                              value={editingLog.foodName}
+                              onChange={(e) => setEditingLog({...editingLog, foodName: e.target.value})}
+                            />
+                          </div>
 
-                      <div className="flex items-center gap-4 text-right">
-                        <div>
-                          <div className="text-emerald-400 font-bold text-sm">{log.totalCalories}</div>
-                          <div className="text-[9px] font-bold">
-                            <span className="text-indigo-400">Б {log.totalProtein}</span>
-                            <span className="text-amber-400 ml-1">Ж {log.totalFat}</span>
-                            <span className="text-sky-400 ml-1">У {log.totalCarbs}</span>
+                          <div>
+                            <span className="text-[9px] text-zinc-500 font-bold block mb-1">ГРАММЫ</span>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-emerald-400 font-bold"
+                              value={editingLog.grams}
+                              onChange={(e) => setEditingLog({...editingLog, grams: e.target.value})}
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <button onClick={saveEditLog} type="button" className="fast-touch bg-emerald-600 rounded-xl p-3 font-bold">Сохранить</button>
+                            <button onClick={() => { setEditingLogId(null); setEditingLog({ foodName: "", grams: "" }); }} type="button" className="fast-touch bg-[#27272a] rounded-xl p-3 font-bold">Отмена</button>
                           </div>
                         </div>
+                      ) : (
+                        <div className="flex justify-between items-center gap-3">
+                          <div className="min-w-0">
+                            <p className="font-bold text-sm truncate">{log.foodName}</p>
+                            <p className="text-[10px] text-zinc-500 font-bold uppercase">{log.grams} г</p>
+                          </div>
 
-                        <button onClick={() => deleteFoodLog(log.id)} className="fast-touch text-zinc-700 active:text-red-400 p-1 bg-transparent">
-                          <IconTrash className="w-5 h-5" />
-                        </button>
-                      </div>
+                          <div className="flex items-center gap-3 text-right">
+                            <div>
+                              <div className="text-emerald-400 font-bold text-sm">{log.totalCalories}</div>
+                              <div className="text-[9px] font-bold">
+                                <span className="text-indigo-400">Б {log.totalProtein}</span>
+                                <span className="text-amber-400 ml-1">Ж {log.totalFat}</span>
+                                <span className="text-sky-400 ml-1">У {log.totalCarbs}</span>
+                              </div>
+                            </div>
+
+                            <button onClick={() => startEditLog(log)} className="fast-touch text-zinc-600 active:text-indigo-400 p-1 bg-transparent">
+                              <IconEdit className="w-5 h-5" />
+                            </button>
+
+                            <button onClick={() => deleteFoodLog(log.id)} className="fast-touch text-zinc-700 active:text-red-400 p-1 bg-transparent">
+                              <IconTrash className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -983,8 +1082,8 @@
 
                 <div className="space-y-4">
                   {currentTraining.map(ex => {
-                    const target = sum(ex.targets);
-                    const actual = sum(ex.actuals);
+                    const target = getTarget(ex);
+                    const actual = getActual(ex);
                     const color = unitColor(ex.unit);
                     const percentDone = pct(actual, target);
 
@@ -994,7 +1093,7 @@
                           <div>
                             <h3 className="text-base font-black">{ex.title}</h3>
                             <p className="text-[10px] text-zinc-500 font-bold uppercase">
-                              цель: {ex.targets.join(" + ")} {unitLabel(ex.unit)}
+                              цель: {round(target, 0)} {unitLabel(ex.unit)}
                             </p>
                           </div>
 
@@ -1006,22 +1105,21 @@
 
                         <ProgressBar value={percentDone} color={color} />
 
-                        <div className={`grid gap-2 mt-4 ${ex.targets.length === 1 ? "grid-cols-1" : "grid-cols-3"}`}>
-                          {ex.targets.map((targetValue, idx) => (
-                            <div key={idx}>
-                              <span className="text-[9px] text-zinc-500 font-bold block mb-1">
-                                {ex.unit === "steps" ? "ШАГИ" : `ПОДХОД ${idx + 1}`} · цель {targetValue}
-                              </span>
-                              <input
-                                type="number"
-                                inputMode="decimal"
-                                placeholder="0"
-                                className={`w-full bg-[#27272a] rounded-xl p-3 ${colorClass(color, "text")} font-bold outline-none min-w-0`}
-                                value={ex.actuals?.[idx] || ""}
-                                onChange={(e) => updateExerciseActual(ex.id, idx, e.target.value)}
-                              />
-                            </div>
-                          ))}
+                        <div className="mt-4">
+                          <span className="text-[9px] text-zinc-500 font-bold block mb-1">
+                            СДЕЛАНО · вводи общую сумму
+                          </span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            placeholder="0"
+                            className={`w-full bg-[#27272a] rounded-xl p-4 ${colorClass(color, "text")} font-black text-lg outline-none min-w-0`}
+                            value={ex.actual || ""}
+                            onChange={(e) => updateExerciseActual(ex.id, e.target.value)}
+                          />
+                          <p className="text-xs text-zinc-500 mt-2">
+                            Например: цель 30 отжиманий. Сделал 10 — вписал 10. Сделал ещё 10 — заменил на 20.
+                          </p>
                         </div>
                       </div>
                     );
@@ -1099,6 +1197,23 @@
       );
     }
 
+    function LabeledInput({ label, value, onChange, color, placeholder = "", required = false }) {
+      return (
+        <div>
+          <span className="text-[9px] text-zinc-500 font-bold block mb-1">{label}</span>
+          <input
+            type={label === "НАЗВАНИЕ" ? "text" : "number"}
+            inputMode={label === "НАЗВАНИЕ" ? "text" : "decimal"}
+            placeholder={placeholder}
+            className={`w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 ${color} font-bold`}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            required={required}
+          />
+        </div>
+      );
+    }
+
     function FoodBase({
       foods,
       newFood,
@@ -1117,13 +1232,13 @@
           <form onSubmit={saveNewFood} className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-4">
             <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Новый продукт на 100 г</h2>
 
-            <input type="text" placeholder="Название" className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-zinc-200" value={newFood.name} onChange={(e) => setNewFood({...newFood, name: e.target.value})} required />
+            <LabeledInput label="НАЗВАНИЕ" value={newFood.name} color="text-zinc-200" placeholder="Название" onChange={(v) => setNewFood({...newFood, name: v})} required />
 
             <div className="grid grid-cols-2 gap-3">
-              <input type="number" inputMode="decimal" placeholder="Ккал" className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-emerald-400 font-bold" value={newFood.calories} onChange={(e) => setNewFood({...newFood, calories: e.target.value})} required />
-              <input type="number" inputMode="decimal" placeholder="Белок" className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-indigo-400 font-bold" value={newFood.protein} onChange={(e) => setNewFood({...newFood, protein: e.target.value})} required />
-              <input type="number" inputMode="decimal" placeholder="Жиры" className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-amber-400 font-bold" value={newFood.fat} onChange={(e) => setNewFood({...newFood, fat: e.target.value})} required />
-              <input type="number" inputMode="decimal" placeholder="Углеводы" className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-sky-400 font-bold" value={newFood.carbs} onChange={(e) => setNewFood({...newFood, carbs: e.target.value})} required />
+              <LabeledInput label="ККАЛ" value={newFood.calories} color="text-emerald-400" placeholder="Ккал" onChange={(v) => setNewFood({...newFood, calories: v})} required />
+              <LabeledInput label="БЕЛКИ" value={newFood.protein} color="text-indigo-400" placeholder="Белки" onChange={(v) => setNewFood({...newFood, protein: v})} required />
+              <LabeledInput label="ЖИРЫ" value={newFood.fat} color="text-amber-400" placeholder="Жиры" onChange={(v) => setNewFood({...newFood, fat: v})} required />
+              <LabeledInput label="УГЛЕВОДЫ" value={newFood.carbs} color="text-sky-400" placeholder="Углеводы" onChange={(v) => setNewFood({...newFood, carbs: v})} required />
             </div>
 
             <button type="submit" className="fast-touch w-full bg-indigo-600 active:bg-indigo-700 text-white rounded-xl p-4 font-bold transition-transform active:scale-95">
@@ -1138,13 +1253,15 @@
               <div key={f.id} className="bg-[#18181b] rounded-xl p-3 border border-zinc-800/30">
                 {editingFoodId === f.id ? (
                   <div className="space-y-3">
-                    <input type="text" className="w-full bg-[#27272a] rounded-xl p-3 outline-none text-zinc-200" value={editingFood.name} onChange={(e) => setEditingFood({...editingFood, name: e.target.value})} />
+                    <LabeledInput label="НАЗВАНИЕ" value={editingFood.name} color="text-zinc-200" placeholder="Название" onChange={(v) => setEditingFood({...editingFood, name: v})} />
+
                     <div className="grid grid-cols-2 gap-3">
-                      <input type="number" inputMode="decimal" className="w-full bg-[#27272a] rounded-xl p-3 outline-none text-emerald-400 font-bold" value={editingFood.calories} onChange={(e) => setEditingFood({...editingFood, calories: e.target.value})} />
-                      <input type="number" inputMode="decimal" className="w-full bg-[#27272a] rounded-xl p-3 outline-none text-indigo-400 font-bold" value={editingFood.protein} onChange={(e) => setEditingFood({...editingFood, protein: e.target.value})} />
-                      <input type="number" inputMode="decimal" className="w-full bg-[#27272a] rounded-xl p-3 outline-none text-amber-400 font-bold" value={editingFood.fat} onChange={(e) => setEditingFood({...editingFood, fat: e.target.value})} />
-                      <input type="number" inputMode="decimal" className="w-full bg-[#27272a] rounded-xl p-3 outline-none text-sky-400 font-bold" value={editingFood.carbs} onChange={(e) => setEditingFood({...editingFood, carbs: e.target.value})} />
+                      <LabeledInput label="ККАЛ" value={editingFood.calories} color="text-emerald-400" placeholder="Ккал" onChange={(v) => setEditingFood({...editingFood, calories: v})} />
+                      <LabeledInput label="БЕЛКИ" value={editingFood.protein} color="text-indigo-400" placeholder="Белки" onChange={(v) => setEditingFood({...editingFood, protein: v})} />
+                      <LabeledInput label="ЖИРЫ" value={editingFood.fat} color="text-amber-400" placeholder="Жиры" onChange={(v) => setEditingFood({...editingFood, fat: v})} />
+                      <LabeledInput label="УГЛЕВОДЫ" value={editingFood.carbs} color="text-sky-400" placeholder="Углеводы" onChange={(v) => setEditingFood({...editingFood, carbs: v})} />
                     </div>
+
                     <div className="grid grid-cols-2 gap-2">
                       <button onClick={saveEditFood} type="button" className="fast-touch bg-emerald-600 rounded-xl p-3 font-bold">Сохранить</button>
                       <button onClick={cancelEdit} type="button" className="fast-touch bg-[#27272a] rounded-xl p-3 font-bold">Отмена</button>
@@ -1197,16 +1314,19 @@
           <form onSubmit={saveNewExercise} className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-4">
             <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Новое упражнение</h2>
 
-            <input type="text" placeholder="Название" className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-zinc-200" value={newExercise.title} onChange={(e) => setNewExercise({...newExercise, title: e.target.value})} required />
+            <LabeledInput label="НАЗВАНИЕ" value={newExercise.title} color="text-zinc-200" placeholder="Например: Отжимания" onChange={(v) => setNewExercise({...newExercise, title: v})} required />
 
             <div className="grid grid-cols-2 gap-3">
-              <select className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-zinc-200" value={newExercise.unit} onChange={(e) => setNewExercise({...newExercise, unit: e.target.value, targets: e.target.value === "steps" ? "7000" : e.target.value === "sec" ? "30,30,30" : "10,10,10"})}>
-                <option value="reps">Повторы</option>
-                <option value="sec">Секунды</option>
-                <option value="steps">Шаги</option>
-              </select>
+              <div>
+                <span className="text-[9px] text-zinc-500 font-bold block mb-1">ЕДИНИЦА</span>
+                <select className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-zinc-200" value={newExercise.unit} onChange={(e) => setNewExercise({...newExercise, unit: e.target.value, target: e.target.value === "steps" ? "7000" : e.target.value === "sec" ? "90" : "30"})}>
+                  <option value="reps">Повторы</option>
+                  <option value="sec">Секунды</option>
+                  <option value="steps">Шаги</option>
+                </select>
+              </div>
 
-              <input type="text" placeholder="10,10,10" className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-amber-400 font-bold" value={newExercise.targets} onChange={(e) => setNewExercise({...newExercise, targets: e.target.value})} required />
+              <LabeledInput label="ЦЕЛЬ" value={newExercise.target} color="text-amber-400" placeholder="30" onChange={(v) => setNewExercise({...newExercise, target: v})} required />
             </div>
 
             <button type="submit" className="fast-touch w-full bg-amber-600 active:bg-amber-700 text-white rounded-xl p-4 font-bold transition-transform active:scale-95">
@@ -1214,7 +1334,7 @@
             </button>
 
             <p className="text-xs text-zinc-500 leading-relaxed">
-              Цель пишется через запятую: 10,10,10 = три подхода. Для планки: 30,30,30. Для шагов: 7000.
+              Теперь цель одна: например 30 отжиманий, 90 секунд планки или 7000 шагов.
             </p>
           </form>
 
@@ -1223,7 +1343,7 @@
               Применить шаблон к этому дню
             </button>
             <p className="text-xs text-zinc-500 leading-relaxed mt-3">
-              Новые даты получают этот шаблон автоматически. Уже открытые дни не меняются, пока ты сам не нажмёшь эту кнопку.
+              Новые упражнения сразу появляются сегодня. Эта кнопка нужна, если хочешь полностью заменить тренировку дня новым шаблоном.
             </p>
           </div>
 
@@ -1234,16 +1354,19 @@
               <div key={ex.id} className="bg-[#18181b] rounded-xl p-3 border border-zinc-800/30">
                 {editingExerciseId === ex.id ? (
                   <div className="space-y-3">
-                    <input type="text" className="w-full bg-[#27272a] rounded-xl p-3 outline-none text-zinc-200" value={editingExercise.title} onChange={(e) => setEditingExercise({...editingExercise, title: e.target.value})} />
+                    <LabeledInput label="НАЗВАНИЕ" value={editingExercise.title} color="text-zinc-200" placeholder="Название" onChange={(v) => setEditingExercise({...editingExercise, title: v})} />
 
                     <div className="grid grid-cols-2 gap-3">
-                      <select className="w-full bg-[#27272a] rounded-xl p-3 outline-none text-zinc-200" value={editingExercise.unit} onChange={(e) => setEditingExercise({...editingExercise, unit: e.target.value})}>
-                        <option value="reps">Повторы</option>
-                        <option value="sec">Секунды</option>
-                        <option value="steps">Шаги</option>
-                      </select>
+                      <div>
+                        <span className="text-[9px] text-zinc-500 font-bold block mb-1">ЕДИНИЦА</span>
+                        <select className="w-full bg-[#27272a] rounded-xl p-3 outline-none text-zinc-200" value={editingExercise.unit} onChange={(e) => setEditingExercise({...editingExercise, unit: e.target.value})}>
+                          <option value="reps">Повторы</option>
+                          <option value="sec">Секунды</option>
+                          <option value="steps">Шаги</option>
+                        </select>
+                      </div>
 
-                      <input type="text" className="w-full bg-[#27272a] rounded-xl p-3 outline-none text-amber-400 font-bold" value={editingExercise.targetsText} onChange={(e) => setEditingExercise({...editingExercise, targetsText: e.target.value})} />
+                      <LabeledInput label="ЦЕЛЬ" value={editingExercise.target} color="text-amber-400" placeholder="30" onChange={(v) => setEditingExercise({...editingExercise, target: v})} />
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
@@ -1256,7 +1379,7 @@
                     <div className="flex-1 min-w-0">
                       <span className="text-sm font-medium truncate block">{ex.title}</span>
                       <div className="flex gap-2 text-[10px] font-bold uppercase mt-1 flex-wrap">
-                        <span className={colorClass(unitColor(ex.unit), "text")}>{ex.targets.join(" + ")} {unitLabel(ex.unit)}</span>
+                        <span className={colorClass(unitColor(ex.unit), "text")}>{getTarget(ex)} {unitLabel(ex.unit)}</span>
                       </div>
                     </div>
 
