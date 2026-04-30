@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="КБЖУ" />
@@ -28,7 +28,7 @@
     }
     ::-webkit-scrollbar { width: 0; height: 0; background: transparent; }
     .safe-pt { padding-top: max(32px, env(safe-area-inset-top)); }
-    .safe-pb { padding-bottom: max(8px, calc(env(safe-area-inset-bottom) - 24px)); }
+    .safe-pb { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
     .fast-touch { touch-action: manipulation; }
     .app-shell { height: 100dvh; min-height: 100dvh; }
     input, select, textarea { font-size: 16px; }
@@ -103,7 +103,7 @@
     const today = todayKey();
 
     const defaultState = () => ({
-      appVersion: 16,
+      appVersion: 17,
       foods: [
         { id: "f1", name: "Куриное филе", calories: 113, protein: 23.6, fat: 1.9, carbs: 0 },
         { id: "f2", name: "Гречка варёная", calories: 132, protein: 4.5, fat: 1.3, carbs: 25 },
@@ -137,7 +137,7 @@
       return {
         ...fresh,
         ...s,
-        appVersion: 16,
+        appVersion: 17,
         foods: Array.isArray(s.foods) && s.foods.length ? s.foods : fresh.foods,
         foodLogsByDate: s.foodLogsByDate || {},
         goalsByDate: s.goalsByDate || fresh.goalsByDate,
@@ -678,7 +678,7 @@
       function exportBackup() {
         const backup = {
           ...state,
-          appVersion: 16,
+          appVersion: 17,
           exportedAt: new Date().toISOString(),
           currentDate
         };
