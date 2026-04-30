@@ -62,9 +62,13 @@
       return `${year}-${month}-${day}`;
     };
 
+    const parseLocalDate = (dateString) => {
+      const [year, month, day] = String(dateString).split("-").map(Number);
+      return new Date(year, month - 1, day);
+    };
+
     const displayDate = (dateString) => {
-      const [year, month, day] = dateString.split("-");
-      const d = new Date(year, month - 1, day);
+      const d = parseLocalDate(dateString);
       const todayStr = getLocalDateString(new Date());
 
       if (dateString === todayStr) return "Сегодня";
@@ -111,6 +115,63 @@
       { id: "4", name: "Творог 5%", calories: 121, protein: 17, fat: 5, carbs: 1.8 },
       { id: "5", name: "Огурец", calories: 15, protein: 0.8, fat: 0.1, carbs: 2.8 }
     ];
+
+
+    function normalizeFood(food) {
+      if (!food || typeof food !== "object") return null;
+
+      const id = String(food.id || `${Date.now()}_${Math.random().toString(36).slice(2)}`);
+      const name = String(food.name || food.title || food.product || food["название"] || food["продукт"] || "").trim();
+
+      if (!name) return null;
+
+      return {
+        id,
+        name,
+        calories: num(food.calories ?? food.kcal ?? food["ккал"] ?? food["калории"] ?? food["калорийность"]),
+        protein: num(food.protein ?? food.proteins ?? food["белки"] ?? food["белок"] ?? food["б"]),
+        fat: num(food.fat ?? food.fats ?? food["жиры"] ?? food["жир"] ?? food["ж"]),
+        carbs: num(food.carbs ?? food.carbohydrates ?? food["углеводы"] ?? food["углевод"] ?? food["у"])
+      };
+    }
+
+    function normalizeGoals(value) {
+      return {
+        calories: num(value?.calories || defaultGoals.calories),
+        protein: num(value?.protein || defaultGoals.protein),
+        fat: num(value?.fat || defaultGoals.fat),
+        carbs: num(value?.carbs || defaultGoals.carbs)
+      };
+    }
+
+    function normalizeFoods(value) {
+      if (!Array.isArray(value)) return defaultFoods;
+      const normalized = value.map(normalizeFood).filter(Boolean);
+      return normalized.length ? normalized : defaultFoods;
+    }
+
+    function normalizeLogs(value) {
+      return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    }
+
+    function safeLoad(key, fallback, normalizer = (v) => v) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return fallback;
+        return normalizer(JSON.parse(raw));
+      } catch {
+        return fallback;
+      }
+    }
+
+    function safeSave(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch {
+        alert("Не удалось сохранить данные в память браузера. Скачай backup, чтобы не потерять прогресс.");
+      }
+    }
+
 
     function ProgressBar({ value, color = "emerald" }) {
       const colorClass = {
@@ -210,11 +271,12 @@
         const obj = Array.isArray(parsed) ? parsed[0] : parsed;
         if (!obj || typeof obj !== "object") return null;
 
-        const name = pick(obj, ["name", "title", "product", "название", "продукт"]) || "Новый продукт";
-        const calories = pick(obj, ["calories", "kcal", "ккал", "калории", "калорийность"]);
-        const protein = pick(obj, ["protein", "proteins", "белок", "белки", "б"]);
-        const fat = pick(obj, ["fat", "fats", "жир", "жиры", "ж"]);
-        const carbs = pick(obj, ["carbs", "carbohydrates", "углеводы", "углевод", "у"]);
+        const source = obj.per100g || obj.per_100g || obj.per100 || obj.nutrition_per_100g || obj.nutrition || obj.macros || obj;
+        const name = pick(obj, ["name", "title", "product", "название", "продукт"]) || pick(source, ["name", "title", "product", "название", "продукт"]) || "Новый продукт";
+        const calories = pick(source, ["calories", "kcal", "ккал", "калории", "калорийность"]);
+        const protein = pick(source, ["protein", "proteins", "белок", "белки", "б"]);
+        const fat = pick(source, ["fat", "fats", "жир", "жиры", "ж"]);
+        const carbs = pick(source, ["carbs", "carbohydrates", "углеводы", "углевод", "у"]);
 
         if ([calories, protein, fat, carbs].some(v => v === null)) return null;
 
@@ -334,9 +396,9 @@
     function App() {
       const mainRef = useRef(null);
 
-      const [goals, setGoals] = useState(() => JSON.parse(localStorage.getItem(STORAGE.goals)) || defaultGoals);
-      const [foods, setFoods] = useState(() => JSON.parse(localStorage.getItem(STORAGE.foods)) || defaultFoods);
-      const [dailyLogs, setDailyLogs] = useState(() => JSON.parse(localStorage.getItem(STORAGE.logs)) || {});
+      const [goals, setGoals] = useState(() => safeLoad(STORAGE.goals, defaultGoals, normalizeGoals));
+      const [foods, setFoods] = useState(() => safeLoad(STORAGE.foods, defaultFoods, normalizeFoods));
+      const [dailyLogs, setDailyLogs] = useState(() => safeLoad(STORAGE.logs, {}, normalizeLogs));
       const [currentDate, setCurrentDate] = useState(today);
       const [activeTab, setActiveTab] = useState("diary");
 
@@ -351,9 +413,9 @@
       const [editingLogId, setEditingLogId] = useState(null);
       const [editingLog, setEditingLog] = useState({ foodId: "", grams: "" });
 
-      useEffect(() => localStorage.setItem(STORAGE.goals, JSON.stringify(goals)), [goals]);
-      useEffect(() => localStorage.setItem(STORAGE.foods, JSON.stringify(foods)), [foods]);
-      useEffect(() => localStorage.setItem(STORAGE.logs, JSON.stringify(dailyLogs)), [dailyLogs]);
+      useEffect(() => safeSave(STORAGE.goals, goals), [goals]);
+      useEffect(() => safeSave(STORAGE.foods, foods), [foods]);
+      useEffect(() => safeSave(STORAGE.logs, dailyLogs), [dailyLogs]);
 
       useEffect(() => {
         if (mainRef.current) mainRef.current.scrollTop = 0;
@@ -381,6 +443,28 @@
           fat: round((grams / 100) * num(food.fat), 1),
           carbs: round((grams / 100) * num(food.carbs), 1)
         };
+      }
+
+      function addOrUpdateFood(product) {
+        const normalized = normalizeFood(product);
+
+        if (!normalized) {
+          alert("Не получилось добавить продукт: проверь название и КБЖУ.");
+          return false;
+        }
+
+        const existing = foods.find(f => f.name.trim().toLowerCase() === normalized.name.trim().toLowerCase());
+
+        if (existing) {
+          const shouldUpdate = confirm(`Продукт «${normalized.name}» уже есть в базе. Обновить его КБЖУ?`);
+          if (!shouldUpdate) return false;
+
+          setFoods(prev => prev.map(f => f.id === existing.id ? { ...normalized, id: existing.id } : f));
+          return true;
+        }
+
+        setFoods(prev => [...prev, { ...normalized, id: Date.now().toString() }]);
+        return true;
       }
 
       function addLog(e) {
@@ -456,19 +540,15 @@
 
         if (!newFood.name.trim()) return;
 
-        setFoods(prev => [
-          ...prev,
-          {
-            id: Date.now().toString(),
-            name: newFood.name.trim(),
-            calories: num(newFood.calories),
-            protein: num(newFood.protein),
-            fat: num(newFood.fat),
-            carbs: num(newFood.carbs)
-          }
-        ]);
+        const ok = addOrUpdateFood({
+          name: newFood.name.trim(),
+          calories: num(newFood.calories),
+          protein: num(newFood.protein),
+          fat: num(newFood.fat),
+          carbs: num(newFood.carbs)
+        });
 
-        setNewFood({ name: "", calories: "", protein: "", fat: "", carbs: "" });
+        if (ok) setNewFood({ name: "", calories: "", protein: "", fat: "", carbs: "" });
       }
 
       function addProductFromPaste() {
@@ -479,16 +559,12 @@
           return;
         }
 
-        setFoods(prev => [
-          ...prev,
-          {
-            id: Date.now().toString(),
-            ...parsed
-          }
-        ]);
+        const ok = addOrUpdateFood(parsed);
 
-        setPasteText("");
-        alert(`Добавил продукт: ${parsed.name}`);
+        if (ok) {
+          setPasteText("");
+          alert(`Добавил продукт: ${parsed.name}`);
+        }
       }
 
       function fillProductFromPaste() {
@@ -530,11 +606,17 @@
       }
 
       function deleteFood(foodId) {
+        const food = foods.find(f => f.id === foodId);
+        if (food && !confirm(`Удалить продукт «${food.name}» из базы?`)) return;
+
         setFoods(prev => prev.filter(f => f.id !== foodId));
+
+        if (selectedFoodId === foodId) setSelectedFoodId("");
+        if (editingLog.foodId === foodId) setEditingLog({ foodId: "", grams: editingLog.grams });
       }
 
       function changeDate(offset) {
-        const d = new Date(currentDate);
+        const d = parseLocalDate(currentDate);
         d.setDate(d.getDate() + offset);
         setCurrentDate(getLocalDateString(d));
         setEditingLogId(null);
@@ -555,7 +637,7 @@
         a.href = url;
         a.download = `diet-tracker-backup-${currentDate}.json`;
         a.click();
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
 
       function importBackup(e) {
@@ -573,6 +655,7 @@
           } catch {
             alert("Не получилось прочитать backup");
           }
+          e.target.value = "";
         };
         reader.readAsText(file);
       }
@@ -607,16 +690,16 @@
             {activeTab === "diary" ? (
               <div className="space-y-6">
                 <div className="flex items-center justify-between bg-[#18181b] rounded-2xl p-1 border border-zinc-800/50">
-                  <button onClick={() => changeDate(-1)} className="fast-touch p-3 text-zinc-400 bg-transparent active:text-zinc-200">
+                  <button type="button" onClick={() => changeDate(-1)} className="fast-touch p-3 text-zinc-400 bg-transparent active:text-zinc-200">
                     <IconChevronLeft className="w-5 h-5" />
                   </button>
 
-                  <button onClick={() => setCurrentDate(today)} className="fast-touch bg-transparent px-3 py-2">
+                  <button type="button" onClick={() => { setCurrentDate(today); setEditingLogId(null); }} className="fast-touch bg-transparent px-3 py-2">
                     <div className="font-bold text-sm text-zinc-200">{displayDate(currentDate)}</div>
                     <div className="text-[9px] text-zinc-600 font-bold uppercase">{currentDate}</div>
                   </button>
 
-                  <button onClick={() => changeDate(1)} className="fast-touch p-3 text-zinc-400 bg-transparent active:text-zinc-200">
+                  <button type="button" onClick={() => changeDate(1)} className="fast-touch p-3 text-zinc-400 bg-transparent active:text-zinc-200">
                     <IconChevronRight className="w-5 h-5" />
                   </button>
                 </div>
@@ -858,7 +941,7 @@
                     <IconDownload className="w-4 h-4" /> Backup
                   </h2>
 
-                  <button onClick={exportBackup} className="fast-touch w-full bg-emerald-600 active:bg-emerald-700 text-white rounded-xl p-4 font-bold transition-transform active:scale-95">
+                  <button type="button" onClick={exportBackup} className="fast-touch w-full bg-emerald-600 active:bg-emerald-700 text-white rounded-xl p-4 font-bold transition-transform active:scale-95">
                     Скачать backup
                   </button>
 
@@ -876,12 +959,12 @@
           </main>
 
           <nav className="shrink-0 bg-[#18181b] border-t border-zinc-800 flex justify-around pt-2 safe-pb relative z-40">
-            <button onClick={() => switchTab("diary")} className={`fast-touch flex-1 flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "diary" ? "text-emerald-400" : "text-zinc-600 active:text-zinc-400"}`}>
+            <button type="button" onClick={() => switchTab("diary")} className={`fast-touch flex-1 flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "diary" ? "text-emerald-400" : "text-zinc-600 active:text-zinc-400"}`}>
               <IconCalendar className="w-6 h-6" />
               <span className="text-[9px] font-bold mt-1 uppercase">Дневник</span>
             </button>
 
-            <button onClick={() => switchTab("directory")} className={`fast-touch flex-1 flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "directory" ? "text-indigo-400" : "text-zinc-600 active:text-zinc-400"}`}>
+            <button type="button" onClick={() => switchTab("directory")} className={`fast-touch flex-1 flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "directory" ? "text-indigo-400" : "text-zinc-600 active:text-zinc-400"}`}>
               <IconBook className="w-6 h-6" />
               <span className="text-[9px] font-bold mt-1 uppercase">База</span>
             </button>
