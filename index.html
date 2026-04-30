@@ -292,6 +292,78 @@
       }
     }
 
+
+    function normalizeProductObjectForImport(obj) {
+      if (!obj || typeof obj !== "object") return null;
+
+      const source = obj.per100g || obj.per_100g || obj.per100 || obj.nutrition_per_100g || obj.nutrition || obj.macros || obj;
+      const name = pick(obj, ["name", "title", "product", "название", "продукт"]) || pick(source, ["name", "title", "product", "название", "продукт"]) || "";
+      const calories = pick(source, ["calories", "kcal", "ккал", "калории", "калорийность"]);
+      const protein = pick(source, ["protein", "proteins", "белок", "белки", "б"]);
+      const fat = pick(source, ["fat", "fats", "жир", "жиры", "ж"]);
+      const carbs = pick(source, ["carbs", "carbohydrates", "углеводы", "углевод", "у"]);
+
+      if (!name || [calories, protein, fat, carbs].some(v => v === null)) return null;
+
+      return {
+        name: String(name).trim(),
+        calories: round(calories, 0),
+        protein: round(protein, 1),
+        fat: round(fat, 1),
+        carbs: round(carbs, 1)
+      };
+    }
+
+    function parseProductsJson(rawText) {
+      const raw = String(rawText || "").trim();
+      if (!raw) return [];
+
+      let jsonText = raw;
+
+      const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+      if (fenced) jsonText = fenced[1].trim();
+
+      const firstObj = jsonText.indexOf("{");
+      const lastObj = jsonText.lastIndexOf("}");
+      const firstArr = jsonText.indexOf("[");
+      const lastArr = jsonText.lastIndexOf("]");
+
+      try {
+        if (firstArr !== -1 && lastArr !== -1 && (firstObj === -1 || firstArr < firstObj)) {
+          jsonText = jsonText.slice(firstArr, lastArr + 1);
+        } else if (firstObj !== -1 && lastObj !== -1) {
+          jsonText = jsonText.slice(firstObj, lastObj + 1);
+        }
+
+        const parsed = JSON.parse(jsonText);
+
+        let list = [];
+        if (Array.isArray(parsed)) {
+          list = parsed;
+        } else if (Array.isArray(parsed.products)) {
+          list = parsed.products;
+        } else if (Array.isArray(parsed.items)) {
+          list = parsed.items;
+        } else if (Array.isArray(parsed.foods)) {
+          list = parsed.foods;
+        } else {
+          list = [parsed];
+        }
+
+        return list.map(normalizeProductObjectForImport).filter(Boolean);
+      } catch {
+        return [];
+      }
+    }
+
+    function parseProductsFromText(rawText) {
+      const jsonProducts = parseProductsJson(rawText);
+      if (jsonProducts.length) return jsonProducts;
+
+      const one = parseProductFromText(rawText);
+      return one ? [one] : [];
+    }
+
     function parseProductFromText(rawText) {
       const jsonProduct = parseProductJson(rawText);
       if (jsonProduct) return jsonProduct;
@@ -552,23 +624,29 @@
       }
 
       function addProductFromPaste() {
-        const parsed = parseProductFromText(pasteText);
+        const parsedProducts = parseProductsFromText(pasteText);
 
-        if (!parsed) {
+        if (!parsedProducts.length) {
           alert("Не смог распознать. В тексте должны быть ккал, белки, жиры и углеводы на 100 г.");
           return;
         }
 
-        const ok = addOrUpdateFood(parsed);
+        let added = 0;
 
-        if (ok) {
+        parsedProducts.forEach(product => {
+          const ok = addOrUpdateFood(product);
+          if (ok) added += 1;
+        });
+
+        if (added > 0) {
           setPasteText("");
-          alert(`Добавил продукт: ${parsed.name}`);
+          alert(`Добавлено продуктов: ${added}`);
         }
       }
 
       function fillProductFromPaste() {
-        const parsed = parseProductFromText(pasteText);
+        const parsedProducts = parseProductsFromText(pasteText);
+        const parsed = parsedProducts[0];
 
         if (!parsed) {
           alert("Не смог распознать. В тексте должны быть ккал, белки, жиры и углеводы на 100 г.");
@@ -853,7 +931,7 @@
 
                   <textarea
                     className="w-full bg-[#27272a] rounded-2xl p-4 outline-none min-h-[120px] text-zinc-200"
-                    placeholder='Лучше вставляй JSON. Например: {"name":"Яйцо варёное","calories":155,"protein":12.6,"fat":10.6,"carbs":1.1}'
+                    placeholder='Можно вставить один продукт или массив JSON: [{"name":"Мандарин","calories":53,"protein":0.8,"fat":0.3,"carbs":13.3},{"name":"Киви","calories":61,"protein":1.1,"fat":0.5,"carbs":14.7}]'
                     value={pasteText}
                     onChange={(e) => setPasteText(e.target.value)}
                   />
@@ -869,7 +947,7 @@
                   </div>
 
                   <p className="text-xs text-zinc-500 leading-relaxed">
-                    Самый надёжный формат — JSON на 100 г. Обычный текст тоже поддерживается, но JSON распознаётся точнее.
+                    Самый надёжный формат — JSON на 100 г. Можно вставить один объект или массив продуктов. «Заполнить поля» берёт первый продукт, «Добавить сразу» добавляет все.
                   </p>
                 </div>
 
