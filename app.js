@@ -1,501 +1,625 @@
+const STORAGE_KEY = "kbju_trainer_github_v1";
 
-    const STORE_KEY = 'keto_lite_clean_v1';
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
-    const defaultState = {
-      tab: 'diary',
-      currentDate: localDate(new Date()),
-      goals: { calories: 2000, protein: 150, fat: 130, carbs: 25 },
-      foods: [
-        { id: uid(), name: 'Яйцо варёное', category: 'Яйца', kcal: 155, protein: 12.6, fat: 10.6, carbs: 1.1, status: 'keto', comment: '1 яйцо без скорлупы примерно 50 г.' },
-        { id: uid(), name: 'Сливки 10%', category: 'Молочное', kcal: 118, protein: 2.8, fat: 10, carbs: 4.3, status: 'caution', comment: 'Кето-допустимо, но есть углеводы.' },
-        { id: uid(), name: 'Масло MCT', category: 'Масла', kcal: 833, protein: 0, fat: 100, carbs: 0, status: 'keto', comment: 'Чистый жир. Не лить без счёта.' },
-        { id: uid(), name: 'Кофе растворимый', category: 'Напитки', kcal: 240, protein: 12, fat: 0.5, carbs: 40, status: 'keto', comment: 'Считать сухой порошок. 1 ч.л. ≈ 2 г.' },
-        { id: uid(), name: 'SNAQER арахис-карамель', category: 'Батончики', kcal: 456, protein: 20, fat: 32, carbs: 8, status: 'caution', comment: '1 батончик 50 г = 228 ккал, Б 10, Ж 16, У 4.' }
-      ],
-      logs: {}
+const todayKey = () => new Date().toISOString().slice(0, 10);
+const makeId = () => `id_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
+
+const toNum = (value) => {
+  const parsed = parseFloat(String(value ?? "").replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const round1 = (value) => Math.round(toNum(value) * 10) / 10;
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+const escapeHtml = (value) => {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => {
+    const map = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
     };
+    return map[char];
+  });
+};
 
-    let state = loadState();
-    let toastTimer = null;
+const percent = (used, target) => {
+  if (!target) return 0;
+  return clamp((used / target) * 100, 0, 100);
+};
 
-    function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+const starterProducts = [
+  { id: makeId(), name: "Куриная грудка", kcal: 165, protein: 31, fat: 3.6, carbs: 0 },
+  { id: makeId(), name: "Яйцо куриное", kcal: 157, protein: 12.7, fat: 10.9, carbs: 0.7 },
+  { id: makeId(), name: "Творог 5%", kcal: 121, protein: 17, fat: 5, carbs: 1.8 },
+  { id: makeId(), name: "Гречка варёная", kcal: 110, protein: 3.6, fat: 1.1, carbs: 21.3 },
+  { id: makeId(), name: "Огурец", kcal: 15, protein: 0.8, fat: 0.1, carbs: 2.8 },
+  { id: makeId(), name: "ПП батончик", kcal: 465, protein: 8.8, fat: 35.3, carbs: 11.8 },
+];
 
-    function localDate(dateObj) {
-      const y = dateObj.getFullYear();
-      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const d = String(dateObj.getDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
-    }
+const starterTrainings = () => [
+  {
+    id: makeId(),
+    title: "Минимум дня",
+    done: false,
+    items: [
+      "Отжимания 5–10",
+      "Приседания 10–15",
+      "Вис/подтягивания 20 сек",
+      "Планка 20–30 сек",
+      "Пресс 10–15",
+      "Шаги 7000+",
+    ],
+  },
+  {
+    id: makeId(),
+    title: "Силовая база",
+    done: false,
+    items: [
+      "3 круга",
+      "Отжимания 8–12",
+      "Приседания 15–20",
+      "Негативные подтягивания 3–5",
+      "Планка 30 сек",
+      "Пресс 15",
+    ],
+  },
+];
 
-    function parseDate(dateString) {
-      const [y, m, d] = dateString.split('-').map(Number);
-      return new Date(y, m - 1, d);
-    }
+const defaultState = () => ({
+  settings: {
+    name: "Майский режим",
+    kcal: 2100,
+    protein: 160,
+    fat: 70,
+    carbs: 150,
+    steps: 7000,
+  },
+  products: starterProducts,
+  days: {},
+});
 
-    function displayDate(dateString) {
-      const today = localDate(new Date());
-      if (dateString === today) return 'Сегодня';
-      const y = new Date(); y.setDate(y.getDate() - 1);
-      if (dateString === localDate(y)) return 'Вчера';
-      return parseDate(dateString).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-    }
+let currentDate = todayKey();
+let currentTab = "home";
+let state = loadState();
 
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(STORE_KEY);
-        if (!raw) return structuredClone(defaultState);
-        const saved = JSON.parse(raw);
-        return {
-          ...structuredClone(defaultState),
-          ...saved,
-          goals: { ...defaultState.goals, ...(saved.goals || {}) },
-          foods: Array.isArray(saved.foods) ? saved.foods : defaultState.foods,
-          logs: saved.logs || {}
-        };
-      } catch (e) {
-        return structuredClone(defaultState);
-      }
-    }
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return defaultState();
 
-    function saveState() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+    const parsed = JSON.parse(saved);
+    const fresh = defaultState();
 
-    function n(v, fallback = 0) {
-      const num = Number(String(v ?? '').replace(',', '.'));
-      return Number.isFinite(num) ? num : fallback;
-    }
+    return {
+      ...fresh,
+      ...parsed,
+      settings: { ...fresh.settings, ...(parsed.settings || {}) },
+      products: Array.isArray(parsed.products) && parsed.products.length ? parsed.products : fresh.products,
+      days: parsed.days || {},
+    };
+  } catch {
+    return defaultState();
+  }
+}
 
-    function round1(v) { return Math.round((n(v) + Number.EPSILON) * 10) / 10; }
-    function fmt(v) { return Number.isInteger(round1(v)) ? String(Math.round(v)) : String(round1(v)); }
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
 
-    function calc(food, grams) {
-      const g = n(grams);
-      const k = g / 100;
-      return {
-        kcal: Math.round(n(food.kcal) * k),
-        protein: round1(n(food.protein) * k),
-        fat: round1(n(food.fat) * k),
-        carbs: round1(n(food.carbs) * k)
-      };
-    }
+function getDay(date = currentDate) {
+  if (!state.days[date]) {
+    state.days[date] = {
+      meals: [],
+      trainings: starterTrainings(),
+      stepsDone: "",
+      weight: "",
+      waist: "",
+      note: "",
+    };
+  }
 
-    function dayLogs() { return state.logs[state.currentDate] || []; }
+  return state.days[date];
+}
 
-    function totalsFor(logs) {
-      return logs.reduce((acc, item) => {
-        acc.kcal += n(item.kcal);
-        acc.protein += n(item.protein);
-        acc.fat += n(item.fat);
-        acc.carbs += n(item.carbs);
-        if (item.status === 'caution') acc.caution += 1;
-        if (item.status === 'stop') acc.stop += 1;
-        return acc;
-      }, { kcal: 0, protein: 0, fat: 0, carbs: 0, caution: 0, stop: 0 });
-    }
+function calcProduct(product, grams) {
+  const k = toNum(grams) / 100;
 
-    function ketoStatus(totals) {
-      const carbGoal = n(state.goals.carbs, 25);
-      if (totals.stop > 0 || totals.carbs > 50) {
-        return { icon: '❌', title: 'Кето сорвано', text: 'Есть запрещённый продукт или углеводы выше 50 г. Завтра возвращайся к простому мясо/рыба/яйца/овощи.' };
-      }
-      if (totals.carbs > Math.max(40, carbGoal)) {
-        return { icon: '⚠️', title: 'Кето под угрозой', text: `Углеводы уже ${fmt(totals.carbs)} г. До конца дня больше никаких молочных сладостей, батончиков и соусов.` };
-      }
-      if (totals.carbs > carbGoal) {
-        return { icon: '⚠️', title: 'Выше лимита', text: `Лимит ${fmt(carbGoal)} г, сейчас ${fmt(totals.carbs)} г. Это ещё не катастрофа, но дальше только ноль углеводов.` };
-      }
-      if (totals.caution > 0) {
-        return { icon: '✅', title: 'Кето-норма', text: `Углеводы ${fmt(totals.carbs)} г из ${fmt(carbGoal)} г. Есть продукты “осторожно”, но лимит пока держишь.` };
-      }
-      return { icon: '✅', title: 'Кето-норма', text: `Углеводы ${fmt(totals.carbs)} г из ${fmt(carbGoal)} г. Хорошо, держишь режим.` };
-    }
+  return {
+    kcal: product.kcal * k,
+    protein: product.protein * k,
+    fat: product.fat * k,
+    carbs: product.carbs * k,
+  };
+}
 
-    function progress(current, goal) {
-      const g = n(goal);
-      if (!g) return 0;
-      return Math.min(100, Math.max(0, (n(current) / g) * 100));
-    }
+function getTotals() {
+  const day = getDay();
 
-    function statusBadge(status) {
-      if (status === 'stop') return '<span class="badge stop">стоп</span>';
-      if (status === 'caution') return '<span class="badge caution">осторожно</span>';
-      return '<span class="badge">кето</span>';
-    }
+  return day.meals.reduce(
+    (acc, meal) => {
+      acc.kcal += toNum(meal.kcal);
+      acc.protein += toNum(meal.protein);
+      acc.fat += toNum(meal.fat);
+      acc.carbs += toNum(meal.carbs);
+      return acc;
+    },
+    { kcal: 0, protein: 0, fat: 0, carbs: 0 }
+  );
+}
 
-    function escapeHtml(value) {
-      return String(value ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
-    }
+function macroCard(label, used, target, unit) {
+  const left = target - used;
+  const over = left < 0;
 
-    function render() {
-      const app = document.getElementById('app');
-      const logs = dayLogs();
-      const totals = totalsFor(logs);
-      const status = ketoStatus(totals);
-      const today = localDate(new Date());
-      const title = state.tab === 'diary' ? 'Кето-дневник' : 'База продуктов';
-
-      app.innerHTML = `
-        <header>
-          <div class="title">${title}</div>
-          <div class="header-stats">
-            <span>${Math.round(totals.kcal)} ккал</span>
-            <span>${fmt(totals.carbs)} г угл</span>
-          </div>
-        </header>
-        <main>${state.tab === 'diary' ? diaryHtml(totals, status, logs, today) : productsHtml()}</main>
-        <nav class="safe-pb">
-          <button id="tabDiary" class="nav-btn fast-touch ${state.tab === 'diary' ? 'active' : ''}"><span class="ico">📅</span><span>Дневник</span></button>
-          <button id="tabProducts" class="nav-btn products fast-touch ${state.tab === 'products' ? 'active' : ''}"><span class="ico">📦</span><span>База</span></button>
-        </nav>
-      `;
-
-      document.getElementById('tabDiary').onclick = () => setTab('diary');
-      document.getElementById('tabProducts').onclick = () => setTab('products');
-
-      if (state.tab === 'diary') bindDiary();
-      else bindProducts();
-    }
-
-    function diaryHtml(totals, status, logs, today) {
-      return `
-        <div class="space">
-          <div class="date-row">
-            <button class="date-btn fast-touch" id="prevDate">‹</button>
-            <div class="date-label">${displayDate(state.currentDate)}</div>
-            <button class="date-btn fast-touch" id="nextDate" ${state.currentDate >= today ? 'disabled' : ''}>›</button>
-          </div>
-
-          <section class="card">
-            <div class="total-top">
-              <div>
-                <div class="label">Калории</div>
-                <div><span class="big">${Math.round(totals.kcal)}</span> <span class="sub">/ ${fmt(state.goals.calories)}</span></div>
-              </div>
-              <div class="remain"><span class="num">${Math.round(n(state.goals.calories) - totals.kcal)}</span><span class="txt">ост.</span></div>
-            </div>
-            <div class="bar"><div style="width:${progress(totals.kcal, state.goals.calories)}%"></div></div>
-            <div class="macros">
-              <div class="macro">
-                <div class="name">Белки</div>
-                <div class="value protein">${fmt(totals.protein)}г</div>
-                <div class="sub">/ ${fmt(state.goals.protein)}г</div>
-                <div class="bar blue"><div style="width:${progress(totals.protein, state.goals.protein)}%"></div></div>
-              </div>
-              <div class="macro">
-                <div class="name">Жиры</div>
-                <div class="value fat">${fmt(totals.fat)}г</div>
-                <div class="sub">/ ${fmt(state.goals.fat)}г</div>
-                <div class="bar yellow"><div style="width:${progress(totals.fat, state.goals.fat)}%"></div></div>
-              </div>
-              <div class="macro">
-                <div class="name">Углеводы</div>
-                <div class="value carbs">${fmt(totals.carbs)}г</div>
-                <div class="sub">/ ${fmt(state.goals.carbs)}г</div>
-                <div class="bar orange"><div style="width:${progress(totals.carbs, state.goals.carbs)}%"></div></div>
-              </div>
-            </div>
-          </section>
-
-          <section class="card small status-box">
-            <div class="status-icon">${status.icon}</div>
-            <div>
-              <div class="status-title">${status.title}</div>
-              <div class="status-text">${escapeHtml(status.text)}</div>
-            </div>
-          </section>
-
-          <form id="addLogForm" class="card space">
-            <p class="section-title">Добавить еду</p>
-            <select id="foodSelect" required>
-              <option value="" disabled selected>Выбери продукт</option>
-              ${state.foods.map(f => `<option value="${f.id}">${escapeHtml(f.name)} — ${fmt(f.kcal)} ккал / Б${fmt(f.protein)} Ж${fmt(f.fat)} У${fmt(f.carbs)}</option>`).join('')}
-            </select>
-            <div class="form-row">
-              <input id="gramsInput" type="number" inputmode="decimal" step="0.1" placeholder="Граммы" required />
-              <button type="submit" class="round-btn fast-touch">+</button>
-            </div>
-          </form>
-
-          <section>
-            <p class="section-title">Съедено</p>
-            <div class="log-list">
-              ${logs.length ? logs.map(item => logItemHtml(item)).join('') : '<div class="empty">Пока ничего не добавлено</div>'}
-            </div>
-          </section>
+  return `
+    <div class="card" style="margin:0;padding:14px">
+      <div class="row">
+        <div class="small">${label}</div>
+        <div class="${over ? "red" : "green"}" style="font-size:13px;font-weight:900">
+          ${over ? "+" : ""}${round1(Math.abs(left))} ${unit}
         </div>
-      `;
-    }
+      </div>
+      <div style="font-size:24px;font-weight:950;margin-top:4px">
+        ${round1(used)} <span class="small">/ ${target} ${unit}</span>
+      </div>
+      <div class="bar">
+        <div class="fill ${over ? "red" : ""}" style="width:${percent(used, target)}%"></div>
+      </div>
+    </div>
+  `;
+}
 
-    function logItemHtml(item) {
-      return `
-        <div class="item">
-          <div style="min-width:0; flex:1;">
-            <div class="item-title">${escapeHtml(item.name)}</div>
-            <div class="item-meta">
-              <span>${fmt(item.grams)}г</span>
-              <span class="kcal">${Math.round(item.kcal)} ккал</span>
-              <span class="p">Б ${fmt(item.protein)}</span>
-              <span class="f">Ж ${fmt(item.fat)}</span>
-              <span class="c">У ${fmt(item.carbs)}</span>
-            </div>
-          </div>
-          <div class="item-actions">
-            ${statusBadge(item.status)}
-            <button class="mini-btn danger delete-log fast-touch" data-id="${item.id}">✕</button>
-          </div>
+function renderHome() {
+  const settings = state.settings;
+  const day = getDay();
+  const totals = getTotals();
+  const leftKcal = settings.kcal - totals.kcal;
+
+  $("#screenHome").innerHTML = `
+    <div class="card hero">
+      <div class="row">
+        <div>
+          <div class="small">Остаток на сегодня</div>
+          <div class="hero-number ${leftKcal < 0 ? "red" : "green"}">${round1(leftKcal)}</div>
+          <div class="small">ккал осталось из ${settings.kcal}</div>
         </div>
-      `;
-    }
+        <button class="btn-dark" id="resetDayBtn">Сброс</button>
+      </div>
+    </div>
 
-    function productsHtml() {
-      return `
-        <div class="space">
-          <section class="card space">
-            <p class="section-title">Цели на день</p>
-            <div class="form-grid">
-              <label><span class="label">Ккал</span><input id="goalCalories" type="number" value="${fmt(state.goals.calories)}" /></label>
-              <label><span class="label">Белки</span><input id="goalProtein" type="number" value="${fmt(state.goals.protein)}" /></label>
-              <label><span class="label">Жиры</span><input id="goalFat" type="number" value="${fmt(state.goals.fat)}" /></label>
-              <label><span class="label">Углеводы</span><input id="goalCarbs" type="number" value="${fmt(state.goals.carbs)}" /></label>
-            </div>
-            <button id="saveGoals" class="full-btn fast-touch">Сохранить цели</button>
-          </section>
+    <div class="grid2">
+      ${macroCard("Калории", totals.kcal, settings.kcal, "ккал")}
+      ${macroCard("Белок", totals.protein, settings.protein, "г")}
+      ${macroCard("Жиры", totals.fat, settings.fat, "г")}
+      ${macroCard("Углеводы", totals.carbs, settings.carbs, "г")}
+    </div>
 
-          <form id="addFoodForm" class="card space">
-            <p class="section-title">Новый продукт на 100 г</p>
-            <input id="pName" type="text" placeholder="Название" required />
-            <input id="pCategory" type="text" placeholder="Категория" value="Продукты" />
-            <div class="form-grid">
-              <input id="pKcal" type="number" inputmode="decimal" step="0.1" placeholder="Ккал" required />
-              <input id="pProtein" type="number" inputmode="decimal" step="0.1" placeholder="Белки" required />
-              <input id="pFat" type="number" inputmode="decimal" step="0.1" placeholder="Жиры" required />
-              <input id="pCarbs" type="number" inputmode="decimal" step="0.1" placeholder="Углеводы" required />
-            </div>
-            <select id="pStatus">
-              <option value="keto">✅ кето</option>
-              <option value="caution">⚠️ осторожно</option>
-              <option value="stop">❌ стоп</option>
-            </select>
-            <textarea id="pComment" placeholder="Комментарий, необязательно"></textarea>
-            <button type="submit" class="full-btn blue fast-touch">Добавить / обновить</button>
-          </form>
-
-          <section class="card space">
-            <p class="section-title">Вставка от ChatGPT</p>
-            <textarea id="importBox" placeholder='Сюда вставь JSON продукта, например: {"name":"Кета","category":"Рыба","kcal":138,"protein":21,"fat":6,"carbs":0,"status":"keto"}'></textarea>
-            <button id="importProduct" class="full-btn gray fast-touch">Вставить продукт</button>
-            <div class="hint">Можно вставить один продукт или массив продуктов. Если название уже есть — данные обновятся.</div>
-          </section>
-
-          <section>
-            <p class="section-title">Список продуктов (${state.foods.length})</p>
-            <div class="food-list">
-              ${state.foods.map(foodItemHtml).join('')}
-            </div>
-          </section>
+    <div class="card">
+      <h2>Шаги и замеры</h2>
+      <div class="grid3">
+        <div>
+          <label>Шаги</label>
+          <input id="stepsDone" type="number" inputmode="numeric" value="${escapeHtml(day.stepsDone)}" placeholder="0">
         </div>
-      `;
-    }
-
-    function foodItemHtml(f) {
-      return `
-        <div class="item">
-          <div style="min-width:0; flex:1;">
-            <div class="item-title">${escapeHtml(f.name)}</div>
-            <div class="item-meta">
-              <span>${escapeHtml(f.category || 'Продукты')}</span>
-              <span class="kcal">${fmt(f.kcal)} ккал</span>
-              <span class="p">Б ${fmt(f.protein)}</span>
-              <span class="f">Ж ${fmt(f.fat)}</span>
-              <span class="c">У ${fmt(f.carbs)}</span>
-            </div>
-            ${f.comment ? `<div class="hint">${escapeHtml(f.comment)}</div>` : ''}
-          </div>
-          <div class="item-actions">
-            ${statusBadge(f.status)}
-            <button class="mini-btn edit-food fast-touch" data-id="${f.id}">Изм.</button>
-            <button class="mini-btn danger delete-food fast-touch" data-id="${f.id}">✕</button>
-          </div>
+        <div>
+          <label>Вес</label>
+          <input id="weight" type="number" inputmode="decimal" value="${escapeHtml(day.weight)}" placeholder="кг">
         </div>
-      `;
-    }
+        <div>
+          <label>Талия</label>
+          <input id="waist" type="number" inputmode="decimal" value="${escapeHtml(day.waist)}" placeholder="см">
+        </div>
+      </div>
+      <div class="bar">
+        <div class="fill green" style="width:${percent(toNum(day.stepsDone), settings.steps)}%"></div>
+      </div>
+      <div class="small margin-top-8">${toNum(day.stepsDone)} / ${settings.steps} шагов</div>
+    </div>
 
-    function bindDiary() {
-      document.getElementById('prevDate').onclick = () => shiftDate(-1);
-      document.getElementById('nextDate').onclick = () => shiftDate(1);
-      document.getElementById('addLogForm').onsubmit = addLog;
-      document.querySelectorAll('.delete-log').forEach(btn => {
-        btn.onclick = () => deleteLog(btn.dataset.id);
-      });
-    }
+    ${trainingBlockHtml(day)}
 
-    function bindProducts() {
-      document.getElementById('saveGoals').onclick = () => {
-        state.goals = {
-          calories: n(document.getElementById('goalCalories').value),
-          protein: n(document.getElementById('goalProtein').value),
-          fat: n(document.getElementById('goalFat').value),
-          carbs: n(document.getElementById('goalCarbs').value)
-        };
-        saveState();
-        showToast('Цели сохранены');
-        render();
-      };
-      document.getElementById('addFoodForm').onsubmit = addFoodFromForm;
-      document.getElementById('importProduct').onclick = importFood;
-      document.querySelectorAll('.delete-food').forEach(btn => {
-        btn.onclick = () => deleteFood(btn.dataset.id);
-      });
-      document.querySelectorAll('.edit-food').forEach(btn => {
-        btn.onclick = () => fillFoodForm(btn.dataset.id);
-      });
-    }
-
-    function setTab(tab) {
-      state.tab = tab;
-      saveState();
-      render();
-    }
-
-    function shiftDate(delta) {
-      const d = parseDate(state.currentDate);
-      d.setDate(d.getDate() + delta);
-      const next = localDate(d);
-      if (next > localDate(new Date())) return;
-      state.currentDate = next;
-      saveState();
-      render();
-    }
-
-    function addLog(e) {
-      e.preventDefault();
-      const foodId = document.getElementById('foodSelect').value;
-      const grams = n(document.getElementById('gramsInput').value);
-      const food = state.foods.find(f => f.id === foodId);
-      if (!food || grams <= 0) return;
-      const c = calc(food, grams);
-      const log = {
-        id: uid(),
-        foodId: food.id,
-        name: food.name,
-        grams,
-        kcal: c.kcal,
-        protein: c.protein,
-        fat: c.fat,
-        carbs: c.carbs,
-        status: food.status || 'keto'
-      };
-      state.logs[state.currentDate] = [...dayLogs(), log];
-      saveState();
-      render();
-    }
-
-    function deleteLog(id) {
-      state.logs[state.currentDate] = dayLogs().filter(x => x.id !== id);
-      saveState();
-      render();
-    }
-
-    function normalizeFood(obj) {
-      const name = String(obj.name || obj.title || obj['Название'] || '').trim();
-      if (!name) throw new Error('Нет названия продукта');
-      let status = String(obj.status || obj['Статус'] || 'keto').toLowerCase();
-      if (status.includes('ост') || status.includes('caution') || status.includes('warning')) status = 'caution';
-      else if (status.includes('стоп') || status.includes('запр') || status.includes('stop') || status.includes('bad')) status = 'stop';
-      else status = 'keto';
-      return {
-        id: obj.id || uid(),
-        name,
-        category: String(obj.category || obj['Категория'] || 'Продукты').trim(),
-        kcal: n(obj.kcal ?? obj.calories ?? obj['Ккал'] ?? obj['Калории']),
-        protein: n(obj.protein ?? obj['Белки']),
-        fat: n(obj.fat ?? obj['Жиры']),
-        carbs: n(obj.carbs ?? obj['Углеводы']),
-        status,
-        comment: String(obj.comment || obj['Комментарий'] || '').trim()
-      };
-    }
-
-    function upsertFood(food) {
-      const idx = state.foods.findIndex(f => f.name.trim().toLowerCase() === food.name.trim().toLowerCase());
-      if (idx >= 0) state.foods[idx] = { ...state.foods[idx], ...food, id: state.foods[idx].id };
-      else state.foods.push(food);
-    }
-
-    function addFoodFromForm(e) {
-      e.preventDefault();
-      const food = normalizeFood({
-        name: document.getElementById('pName').value,
-        category: document.getElementById('pCategory').value,
-        kcal: document.getElementById('pKcal').value,
-        protein: document.getElementById('pProtein').value,
-        fat: document.getElementById('pFat').value,
-        carbs: document.getElementById('pCarbs').value,
-        status: document.getElementById('pStatus').value,
-        comment: document.getElementById('pComment').value
-      });
-      upsertFood(food);
-      saveState();
-      showToast('Продукт сохранён');
-      render();
-    }
-
-    function fillFoodForm(id) {
-      const f = state.foods.find(x => x.id === id);
-      if (!f) return;
-      document.getElementById('pName').value = f.name || '';
-      document.getElementById('pCategory').value = f.category || '';
-      document.getElementById('pKcal').value = f.kcal ?? '';
-      document.getElementById('pProtein').value = f.protein ?? '';
-      document.getElementById('pFat').value = f.fat ?? '';
-      document.getElementById('pCarbs').value = f.carbs ?? '';
-      document.getElementById('pStatus').value = f.status || 'keto';
-      document.getElementById('pComment').value = f.comment || '';
-      window.setTimeout(() => document.getElementById('pName').scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
-    }
-
-    function deleteFood(id) {
-      const f = state.foods.find(x => x.id === id);
-      if (!f) return;
-      if (!confirm(`Удалить продукт “${f.name}”? Старые записи в дневнике останутся.`)) return;
-      state.foods = state.foods.filter(x => x.id !== id);
-      saveState();
-      render();
-    }
-
-    function importFood() {
-      const raw = document.getElementById('importBox').value.trim();
-      if (!raw) return;
-      try {
-        const parsed = JSON.parse(raw);
-        const arr = Array.isArray(parsed) ? parsed : [parsed];
-        arr.map(normalizeFood).forEach(upsertFood);
-        saveState();
-        showToast(`Добавлено/обновлено: ${arr.length}`);
-        render();
-      } catch (e) {
-        showToast('Не получилось прочитать JSON. Скопируй блок целиком, от { до }');
+    <div class="card">
+      <h2>Что съел сегодня</h2>
+      ${
+        day.meals.length
+          ? day.meals
+              .map(
+                (meal) => `
+                <div class="item-card row">
+                  <div>
+                    <h3>${escapeHtml(meal.name)} <span class="muted" style="font-weight:500">${round1(meal.grams)} г</span></h3>
+                    <div class="small">
+                      ${escapeHtml(meal.time)} · ${round1(meal.kcal)} ккал ·
+                      Б ${round1(meal.protein)} / Ж ${round1(meal.fat)} / У ${round1(meal.carbs)}
+                    </div>
+                  </div>
+                  <button class="delete-btn" data-delete-meal="${meal.id}">×</button>
+                </div>
+              `
+              )
+              .join("")
+          : `<p class="muted">Пока пусто. Нажми “Добавить” снизу.</p>`
       }
-    }
+    </div>
 
-    function showToast(text) {
-      clearTimeout(toastTimer);
-      const old = document.querySelector('.toast');
-      if (old) old.remove();
-      const div = document.createElement('div');
-      div.className = 'toast';
-      div.textContent = text;
-      document.body.appendChild(div);
-      toastTimer = setTimeout(() => div.remove(), 2200);
-    }
+    <div class="card">
+      <h2>Заметка дня</h2>
+      <textarea id="note" placeholder="Сон, тяга к сладкому, самочувствие...">${escapeHtml(day.note)}</textarea>
+    </div>
+  `;
 
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
-    }
+  $("#stepsDone").addEventListener("input", (event) => {
+    day.stepsDone = event.target.value;
+    saveState();
+    renderHome();
+  });
 
+  $("#weight").addEventListener("input", (event) => {
+    day.weight = event.target.value;
+    saveState();
+  });
+
+  $("#waist").addEventListener("input", (event) => {
+    day.waist = event.target.value;
+    saveState();
+  });
+
+  $("#note").addEventListener("input", (event) => {
+    day.note = event.target.value;
+    saveState();
+  });
+
+  $("#resetDayBtn").addEventListener("click", () => {
+    if (!confirm("Очистить день?")) return;
+    delete state.days[currentDate];
+    saveState();
     render();
-  
+  });
+
+  $$("[data-delete-meal]").forEach((button) => {
+    button.addEventListener("click", () => {
+      day.meals = day.meals.filter((meal) => meal.id !== button.dataset.deleteMeal);
+      saveState();
+      renderHome();
+    });
+  });
+
+  $$("[data-toggle-training]").forEach((checkbox) => {
+    checkbox.addEventListener("change", () => {
+      const training = day.trainings.find((item) => item.id === checkbox.dataset.toggleTraining);
+      if (!training) return;
+
+      training.done = checkbox.checked;
+      saveState();
+      renderHome();
+    });
+  });
+
+  $("#addTrainingBtn").addEventListener("click", () => {
+    const title = prompt("Название тренировки");
+    if (!title) return;
+
+    const raw = prompt("Упражнения через запятую", "Отжимания, приседания, планка") || "";
+    const items = raw
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    day.trainings.push({ id: makeId(), title, done: false, items });
+    saveState();
+    renderHome();
+  });
+}
+
+function trainingBlockHtml(day) {
+  return `
+    <div class="card">
+      <div class="row">
+        <h2 style="margin:0">Тренировки</h2>
+        <button id="addTrainingBtn" class="btn-dark">+</button>
+      </div>
+
+      ${day.trainings
+        .map(
+          (training) => `
+          <div class="item-card ${training.done ? "training-done" : ""}">
+            <label style="display:flex;gap:10px;align-items:flex-start;margin:0;color:var(--text);font-size:15px">
+              <input class="checkbox" type="checkbox" data-toggle-training="${training.id}" ${training.done ? "checked" : ""}>
+              <div>
+                <h3>${escapeHtml(training.title)}</h3>
+                <ul>
+                  ${training.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+                </ul>
+              </div>
+            </label>
+          </div>
+        `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderAdd() {
+  $("#screenAdd").innerHTML = `
+    <div class="card">
+      <h2>Добавить еду</h2>
+      <input id="productSearch" placeholder="Поиск продукта">
+    </div>
+    <div id="productList"></div>
+  `;
+
+  const searchInput = $("#productSearch");
+
+  const drawProducts = () => {
+    const query = searchInput.value.toLowerCase().trim();
+    const products = state.products.filter((product) => product.name.toLowerCase().includes(query));
+
+    $("#productList").innerHTML =
+      products
+        .map(
+          (product) => `
+          <div class="card">
+            <h3>${escapeHtml(product.name)}</h3>
+            <div class="small">
+              на 100 г: ${round1(product.kcal)} ккал ·
+              Б ${round1(product.protein)} / Ж ${round1(product.fat)} / У ${round1(product.carbs)}
+            </div>
+
+            <div class="row margin-top-12">
+              <input type="number" inputmode="decimal" placeholder="граммы" value="100" data-grams="${product.id}">
+              <button class="btn-blue" data-add-food="${product.id}">Добавить</button>
+            </div>
+          </div>
+        `
+        )
+        .join("") || `<p class="muted">Ничего не найдено. Добавь продукт в базе.</p>`;
+
+    $$("[data-add-food]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const product = state.products.find((item) => item.id === button.dataset.addFood);
+        if (!product) return;
+
+        const gramsInput = $(`[data-grams="${product.id}"]`);
+        const grams = toNum(gramsInput.value || 100);
+        const calc = calcProduct(product, grams);
+
+        getDay().meals.unshift({
+          id: makeId(),
+          productId: product.id,
+          name: product.name,
+          grams,
+          kcal: calc.kcal,
+          protein: calc.protein,
+          fat: calc.fat,
+          carbs: calc.carbs,
+          time: new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }),
+        });
+
+        saveState();
+        setTab("home");
+      });
+    });
+  };
+
+  searchInput.addEventListener("input", drawProducts);
+  drawProducts();
+}
+
+function renderProducts() {
+  $("#screenProducts").innerHTML = `
+    <div class="card">
+      <h2>База продуктов</h2>
+
+      <input id="productName" placeholder="Название">
+
+      <div class="grid4 margin-top-8">
+        <input id="productKcal" type="number" inputmode="decimal" placeholder="ккал">
+        <input id="productProtein" type="number" inputmode="decimal" placeholder="Б">
+        <input id="productFat" type="number" inputmode="decimal" placeholder="Ж">
+        <input id="productCarbs" type="number" inputmode="decimal" placeholder="У">
+      </div>
+
+      <button id="saveProductBtn" class="btn-green btn-full margin-top-10">Сохранить продукт</button>
+      <div class="small margin-top-8">Данные указывай на 100 г продукта.</div>
+    </div>
+
+    <div>
+      ${state.products
+        .map(
+          (product) => `
+          <div class="item-card row">
+            <div>
+              <h3>${escapeHtml(product.name)}</h3>
+              <div class="small">
+                ${round1(product.kcal)} ккал ·
+                Б ${round1(product.protein)} / Ж ${round1(product.fat)} / У ${round1(product.carbs)} на 100 г
+              </div>
+            </div>
+            <button class="delete-btn" data-delete-product="${product.id}">×</button>
+          </div>
+        `
+        )
+        .join("")}
+    </div>
+  `;
+
+  $("#saveProductBtn").addEventListener("click", () => {
+    const name = $("#productName").value.trim();
+
+    if (!name) {
+      alert("Введите название продукта");
+      return;
+    }
+
+    state.products.unshift({
+      id: makeId(),
+      name,
+      kcal: toNum($("#productKcal").value),
+      protein: toNum($("#productProtein").value),
+      fat: toNum($("#productFat").value),
+      carbs: toNum($("#productCarbs").value),
+    });
+
+    saveState();
+    renderProducts();
+  });
+
+  $$("[data-delete-product]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.products = state.products.filter((product) => product.id !== button.dataset.deleteProduct);
+      saveState();
+      renderProducts();
+    });
+  });
+}
+
+function renderSettings() {
+  const settings = state.settings;
+
+  $("#screenSettings").innerHTML = `
+    <div class="card">
+      <h2>Дневная норма</h2>
+
+      <label>Название режима</label>
+      <input id="settingsName" value="${escapeHtml(settings.name)}">
+
+      <div class="grid2 margin-top-10">
+        <div>
+          <label>Калории</label>
+          <input id="settingsKcal" type="number" inputmode="numeric" value="${settings.kcal}">
+        </div>
+        <div>
+          <label>Шаги</label>
+          <input id="settingsSteps" type="number" inputmode="numeric" value="${settings.steps}">
+        </div>
+        <div>
+          <label>Белок</label>
+          <input id="settingsProtein" type="number" inputmode="numeric" value="${settings.protein}">
+        </div>
+        <div>
+          <label>Жиры</label>
+          <input id="settingsFat" type="number" inputmode="numeric" value="${settings.fat}">
+        </div>
+        <div>
+          <label>Углеводы</label>
+          <input id="settingsCarbs" type="number" inputmode="numeric" value="${settings.carbs}">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Резервная копия</h2>
+      <button id="exportBtn" class="btn-blue btn-full">Скачать backup</button>
+      <button id="importBtn" class="btn-dark btn-full margin-top-8">Загрузить backup</button>
+      <input id="importFile" class="file-input" type="file" accept="application/json">
+      <p class="notice">Данные сохраняются в памяти Safari/браузера на этом устройстве. Backup нужен, чтобы не потерять данные.</p>
+    </div>
+
+    <div class="card">
+      <h2>Установка на iPhone</h2>
+      <p class="notice">Открой сайт в Safari → Поделиться → На экран «Домой». После этого приложение будет запускаться как отдельная иконка.</p>
+    </div>
+  `;
+
+  bindSettingInput("settingsName", "name", false);
+  bindSettingInput("settingsKcal", "kcal", true);
+  bindSettingInput("settingsSteps", "steps", true);
+  bindSettingInput("settingsProtein", "protein", true);
+  bindSettingInput("settingsFat", "fat", true);
+  bindSettingInput("settingsCarbs", "carbs", true);
+
+  $("#exportBtn").addEventListener("click", exportData);
+  $("#importBtn").addEventListener("click", () => $("#importFile").click());
+  $("#importFile").addEventListener("change", importData);
+}
+
+function bindSettingInput(inputId, key, numeric) {
+  $(`#${inputId}`).addEventListener("input", (event) => {
+    state.settings[key] = numeric ? toNum(event.target.value) : event.target.value;
+    saveState();
+    $("#appTitle").textContent = state.settings.name;
+  });
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "kbju-trainer-backup.json";
+  link.click();
+
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function importData(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    try {
+      state = JSON.parse(reader.result);
+      saveState();
+      alert("Данные восстановлены");
+      render();
+    } catch {
+      alert("Не получилось прочитать файл");
+    }
+  };
+
+  reader.readAsText(file);
+}
+
+function setTab(tab) {
+  currentTab = tab;
+
+  $$(".nav-btn").forEach((button) => {
+    button.classList.toggle("active", button.dataset.tab === tab);
+  });
+
+  $("#screenHome").classList.toggle("hidden", tab !== "home");
+  $("#screenAdd").classList.toggle("hidden", tab !== "add");
+  $("#screenProducts").classList.toggle("hidden", tab !== "products");
+  $("#screenSettings").classList.toggle("hidden", tab !== "settings");
+
+  render();
+}
+
+function render() {
+  $("#appTitle").textContent = state.settings.name;
+
+  if (currentTab === "home") renderHome();
+  if (currentTab === "add") renderAdd();
+  if (currentTab === "products") renderProducts();
+  if (currentTab === "settings") renderSettings();
+}
+
+function init() {
+  $("#dateInput").value = currentDate;
+
+  $("#dateInput").addEventListener("change", (event) => {
+    currentDate = event.target.value || todayKey();
+    render();
+  });
+
+  $$(".nav-btn").forEach((button) => {
+    button.addEventListener("click", () => setTab(button.dataset.tab));
+  });
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  }
+
+  render();
+}
+
+init();
