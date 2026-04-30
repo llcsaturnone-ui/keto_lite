@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="КБЖУ" />
-  <meta name="theme-color" content="#09090b" />
-  <title>КБЖУ Трекер</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#09090b">
+  <title>Трекер питания</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -15,24 +14,22 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
-    html, body, #root {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      background: #000;
-      overflow: hidden;
-      overscroll-behavior-y: none;
+    body { 
+      background-color: #000; 
+      margin: 0; 
+      padding: 0; 
+      overscroll-behavior-y: none; 
       -webkit-tap-highlight-color: transparent;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      overflow: hidden; 
     }
-    ::-webkit-scrollbar { width: 0; height: 0; background: transparent; }
-    .safe-pt { padding-top: max(32px, env(safe-area-inset-top)); }
-    .safe-pb { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+
+    ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+    .safe-pb {
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+
     .fast-touch { touch-action: manipulation; }
-    .app-shell { height: 100dvh; min-height: 100dvh; }
-    input, select, textarea { font-size: 16px; }
-    select { background-image: none; }
   </style>
 </head>
 
@@ -49,29 +46,28 @@
     const IconChevronRight = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>;
     const IconTrash = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"/></svg>;
     const IconTarget = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
-    const IconDumbbell = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>;
-    const IconScale = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>;
-    const IconDownload = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>;
     const IconEdit = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>;
-    const IconSettings = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z"/><circle cx="12" cy="12" r="3"/></svg>;
+    const IconDownload = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>;
 
-    const STORAGE_KEY = "kbju_tracker_v12_single_state";
-
-    const todayKey = () => {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const STORAGE = {
+      goals: "diet_goals_v2",
+      foods: "diet_foods_v2",
+      logs: "diet_logs_v2"
     };
 
     const getLocalDateString = (dateObj) => {
-      return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}-${String(dateObj.getDate()).padStart(2, "0")}`;
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const day = String(dateObj.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
     };
 
     const displayDate = (dateString) => {
       const [year, month, day] = dateString.split("-");
       const d = new Date(year, month - 1, day);
-      const today = todayKey();
+      const todayStr = getLocalDateString(new Date());
 
-      if (dateString === today) return "Сегодня";
+      if (dateString === todayStr) return "Сегодня";
 
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
@@ -99,170 +95,66 @@
       return Math.min(100, Math.max(0, (num(current) / num(target)) * 100));
     };
 
-    const sum = (arr) => (arr || []).reduce((a, b) => a + num(b), 0);
-    const today = todayKey();
+    const today = getLocalDateString(new Date());
 
-    const defaultState = () => ({
-      appVersion: 18,
-      foods: [
-        { id: "f1", name: "Куриное филе", calories: 113, protein: 23.6, fat: 1.9, carbs: 0 },
-        { id: "f2", name: "Гречка варёная", calories: 132, protein: 4.5, fat: 1.3, carbs: 25 },
-        { id: "f3", name: "Яйцо куриное", calories: 157, protein: 12.7, fat: 10.9, carbs: 0.7 },
-        { id: "f4", name: "Творог 5%", calories: 121, protein: 17, fat: 5, carbs: 1.8 },
-        { id: "f5", name: "Огурец", calories: 15, protein: 0.8, fat: 0.1, carbs: 2.8 },
-        { id: "f6", name: "ПП батончик", calories: 465, protein: 8.8, fat: 35.3, carbs: 11.8 }
-      ],
-      foodLogsByDate: {},
-      goalsByDate: {
-        [today]: { calories: 2100, protein: 160, fat: 70, carbs: 150 }
-      },
-      measurementsByDate: {
-        [today]: { weight: "", waist: "" }
-      },
-      trainingTemplate: [
-        { id: "e_push", title: "Отжимания", unit: "reps", target: 30 },
-        { id: "e_squat", title: "Приседания", unit: "reps", target: 45 },
-        { id: "e_pull", title: "Подтягивания / негативы", unit: "reps", target: 9 },
-        { id: "e_plank", title: "Планка", unit: "sec", target: 90 },
-        { id: "e_abs", title: "Пресс", unit: "reps", target: 45 },
-        { id: "e_steps", title: "Ходьба", unit: "steps", target: 7000 }
-      ],
-      trainingsByDate: {}
-    });
+    const defaultGoals = {
+      calories: 2000,
+      protein: 160,
+      fat: 65,
+      carbs: 135
+    };
 
-    function normalizeLoadedState(raw) {
-      const fresh = defaultState();
-      const s = raw || fresh;
-
-      return {
-        ...fresh,
-        ...s,
-        appVersion: 18,
-        foods: Array.isArray(s.foods) && s.foods.length ? s.foods : fresh.foods,
-        foodLogsByDate: s.foodLogsByDate || {},
-        goalsByDate: s.goalsByDate || fresh.goalsByDate,
-        measurementsByDate: s.measurementsByDate || fresh.measurementsByDate,
-        trainingTemplate: Array.isArray(s.trainingTemplate) && s.trainingTemplate.length
-          ? s.trainingTemplate.map(normalizeTemplateExercise)
-          : fresh.trainingTemplate,
-        trainingsByDate: normalizeTrainingsByDate(s.trainingsByDate || {})
-      };
-    }
-
-    function normalizeTemplateExercise(ex) {
-      return {
-        id: ex.id || String(Date.now() + Math.random()),
-        title: ex.title || "Упражнение",
-        unit: ex.unit || "reps",
-        target: getTarget(ex)
-      };
-    }
-
-    function normalizeDayExercise(ex) {
-      return {
-        id: ex.id || String(Date.now() + Math.random()),
-        templateId: ex.templateId || ex.id || String(Date.now() + Math.random()),
-        title: ex.title || "Упражнение",
-        unit: ex.unit || "reps",
-        target: getTarget(ex),
-        actual: getActual(ex) || ""
-      };
-    }
-
-    function normalizeTrainingsByDate(map) {
-      const out = {};
-      Object.keys(map || {}).forEach(date => {
-        out[date] = (map[date] || []).map(normalizeDayExercise);
-      });
-      return out;
-    }
-
-    function getTarget(ex) {
-      if (ex?.target !== undefined) return num(ex.target);
-      if (Array.isArray(ex?.targets)) return sum(ex.targets);
-      return 0;
-    }
-
-    function getActual(ex) {
-      if (ex?.actual !== undefined) return num(ex.actual);
-      if (Array.isArray(ex?.actuals)) return sum(ex.actuals);
-      return 0;
-    }
-
-    function cloneExercise(ex) {
-      return {
-        id: `${ex.id}_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-        templateId: ex.id,
-        title: ex.title,
-        unit: ex.unit || "reps",
-        target: getTarget(ex),
-        actual: ""
-      };
-    }
-
-    function cloneTemplate(template) {
-      return (template || []).map(cloneExercise);
-    }
-
-    function unitLabel(unit) {
-      if (unit === "sec") return "сек";
-      if (unit === "steps") return "шаг";
-      return "раз";
-    }
-
-    function unitColor(unit) {
-      if (unit === "sec") return "amber";
-      if (unit === "steps") return "emerald";
-      return "indigo";
-    }
-
-    function colorClass(color, type = "text") {
-      const map = {
-        emerald: { text: "text-emerald-400", bg: "bg-emerald-500" },
-        indigo: { text: "text-indigo-400", bg: "bg-indigo-500" },
-        amber: { text: "text-amber-400", bg: "bg-amber-500" },
-        sky: { text: "text-sky-400", bg: "bg-sky-500" },
-        rose: { text: "text-rose-400", bg: "bg-rose-500" }
-      };
-      return map[color]?.[type] || map.emerald[type];
-    }
-
-    function getPreviousDateKey(map, date) {
-      const keys = Object.keys(map || {}).filter(k => k <= date).sort();
-      return keys.length ? keys[keys.length - 1] : null;
-    }
-
-    function getGoalsFromState(source, date) {
-      if (source.goalsByDate?.[date]) return source.goalsByDate[date];
-      const prevKey = getPreviousDateKey(source.goalsByDate, date);
-      return prevKey ? source.goalsByDate[prevKey] : { calories: 2100, protein: 160, fat: 70, carbs: 150 };
-    }
+    const defaultFoods = [
+      { id: "1", name: "Куриное филе", calories: 113, protein: 23.6, fat: 1.9, carbs: 0 },
+      { id: "2", name: "Гречка варёная", calories: 132, protein: 4.5, fat: 1.3, carbs: 25 },
+      { id: "3", name: "Яйцо варёное", calories: 155, protein: 12.6, fat: 10.6, carbs: 1.1 },
+      { id: "4", name: "Творог 5%", calories: 121, protein: 17, fat: 5, carbs: 1.8 },
+      { id: "5", name: "Огурец", calories: 15, protein: 0.8, fat: 0.1, carbs: 2.8 }
+    ];
 
     function ProgressBar({ value, color = "emerald" }) {
+      const colorClass = {
+        emerald: "bg-emerald-500",
+        indigo: "bg-indigo-500",
+        amber: "bg-amber-500",
+        sky: "bg-sky-500",
+        rose: "bg-rose-500"
+      }[color];
+
       return (
         <div className="h-2 w-full bg-zinc-950 rounded-full overflow-hidden">
-          <div className={`h-full ${colorClass(color, "bg")} transition-all duration-500`} style={{ width: `${value}%` }} />
+          <div className={`h-full ${colorClass} transition-all duration-500`} style={{ width: `${value}%` }} />
         </div>
       );
     }
 
-    function MacroMini({ label, value, target, color, unit = "г" }) {
+    function MacroCard({ label, value, target, color, unit = "г" }) {
       const left = num(target) - num(value);
-      const isOver = left < 0;
-      const usedColor = isOver ? "rose" : color;
+      const over = left < 0;
+      const usedColor = over ? "rose" : color;
+
+      const textClass = {
+        emerald: "text-emerald-400",
+        indigo: "text-indigo-400",
+        amber: "text-amber-400",
+        sky: "text-sky-400",
+        rose: "text-rose-400"
+      }[usedColor];
 
       return (
         <div className="bg-[#18181b] border border-zinc-800/50 rounded-2xl p-3">
           <div className="flex justify-between items-center mb-2">
             <span className="text-[9px] text-zinc-500 font-black uppercase">{label}</span>
-            <span className={`text-[10px] font-black ${isOver ? "text-rose-400" : "text-zinc-400"}`}>
-              {isOver ? "+" : ""}{round(Math.abs(left), 0)} {unit}
+            <span className={`text-[10px] font-black ${over ? "text-rose-400" : "text-zinc-400"}`}>
+              {over ? "+" : ""}{round(Math.abs(left), 0)} {unit}
             </span>
           </div>
-          <div className={`font-black text-lg ${colorClass(color, "text")}`}>
+
+          <div className={`font-black text-lg ${textClass}`}>
             {round(value, unit === "ккал" ? 0 : 1)}
             <span className="text-[10px] text-zinc-600 ml-1">/ {target}</span>
           </div>
+
           <div className="mt-2">
             <ProgressBar value={pct(value, target)} color={usedColor} />
           </div>
@@ -270,118 +162,161 @@
       );
     }
 
-    function SectionButton({ icon, label, onClick, color = "zinc" }) {
-      const colorMap = {
-        emerald: "bg-emerald-600 active:bg-emerald-700",
-        indigo: "bg-indigo-600 active:bg-indigo-700",
-        amber: "bg-amber-600 active:bg-amber-700",
-        sky: "bg-sky-600 active:bg-sky-700",
-        zinc: "bg-[#27272a] active:bg-zinc-700"
-      };
-
+    function InputBox({ label, value, setValue, color, placeholder = "", type = "number" }) {
       return (
-        <button type="button" onClick={onClick} className={`fast-touch ${colorMap[color]} text-white rounded-2xl p-4 font-bold transition-transform active:scale-95 flex items-center justify-center gap-2`}>
-          {icon}
-          <span>{label}</span>
-        </button>
+        <div>
+          <span className="text-[9px] text-zinc-500 font-bold block mb-1">{label}</span>
+          <input
+            type={type}
+            inputMode={type === "number" ? "decimal" : "text"}
+            className={`w-full bg-[#27272a] rounded-xl p-3 ${color} font-bold outline-none min-w-0`}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={placeholder}
+          />
+        </div>
       );
     }
 
-    function App() {
-      const [state, setState] = useState(() => {
-        try {
-          return normalizeLoadedState(JSON.parse(localStorage.getItem(STORAGE_KEY)));
-        } catch {
-          return defaultState();
-        }
-      });
+    function parseProductFromText(rawText) {
+      const raw = String(rawText || "").trim();
+      if (!raw) return null;
 
-      const [currentDate, setCurrentDate] = useState(today);
-      const [activeTab, setActiveTab] = useState("home");
+      const text = raw
+        .replace(/\*\*/g, "")
+        .replace(/≈/g, " ")
+        .replace(/,/g, ".")
+        .replace(/\u00a0/g, " ");
+
+      const lines = text
+        .split(/\n+/)
+        .map(line => line.replace(/[|:]/g, " ").replace(/\s+/g, " ").trim())
+        .filter(Boolean);
+
+      let name = "";
+      const banned = /^(на\s+\d+|на\s+100|показатель|значение|калории|белки|белок|жиры|углеводы|в\s+базу|для\s+приложения|таблица|итого)/i;
+
+      for (const line of lines) {
+        const clean = line
+          .replace(/^#+\s*/, "")
+          .replace(/^\-+\s*/, "")
+          .replace(/^(продукт|название)\s+/i, "")
+          .trim();
+
+        if (
+          clean.length >= 3 &&
+          clean.length <= 60 &&
+          !banned.test(clean) &&
+          !/\d+\s*(ккал|г|гр|%)/i.test(clean) &&
+          !/(можешь|добавить|значение|примерно|лучше|занеси|на 100)/i.test(clean)
+        ) {
+          name = clean;
+          break;
+        }
+      }
+
+      if (!name) {
+        const nameMatch = text.match(/(?:продукт|название)\s*[:\-]\s*([^\n]+)/i);
+        if (nameMatch) name = nameMatch[1].trim();
+      }
+
+      if (!name) name = "Новый продукт";
+
+      let working = text;
+
+      const per100Match = text.match(/на\s*100\s*г([\s\S]*?)(?:на\s*1|на\s*одн|в\s+базу|$)/i);
+      if (per100Match) working = per100Match[1];
+
+      const compact = text.match(/(\d+(?:\.\d+)?)\s*ккал\s*\/?\s*б\s*(\d+(?:\.\d+)?)\s*\/?\s*ж\s*(\d+(?:\.\d+)?)\s*\/?\s*у\s*(\d+(?:\.\d+)?)/i);
+      if (compact) {
+        return {
+          name,
+          calories: round(compact[1], 0),
+          protein: round(compact[2], 1),
+          fat: round(compact[3], 1),
+          carbs: round(compact[4], 1)
+        };
+      }
+
+      function findNumber(labelRegex, source) {
+        const re = new RegExp(labelRegex + "\\s*[:\\-]?\\s*(\\d+(?:\\.\\d+)?)", "i");
+        const m = source.match(re);
+        if (m) return num(m[1]);
+
+        const reReverse = new RegExp("(\\d+(?:\\.\\d+)?)\\s*(?:ккал|г|гр)?\\s*" + labelRegex, "i");
+        const m2 = source.match(reReverse);
+        if (m2) return num(m2[1]);
+
+        return null;
+      }
+
+      let calories = findNumber("(?:калории|ккал|калорийность)", working);
+      let protein = findNumber("(?:белки|белок|б\\b)", working);
+      let fat = findNumber("(?:жиры|жир|ж\\b)", working);
+      let carbs = findNumber("(?:углеводы|углевод|у\\b)", working);
+
+      if ([calories, protein, fat, carbs].some(v => v === null)) {
+        const allNums = working.match(/\d+(?:\.\d+)?/g)?.map(num) || [];
+        if (allNums.length >= 4) {
+          calories = calories ?? allNums[0];
+          protein = protein ?? allNums[1];
+          fat = fat ?? allNums[2];
+          carbs = carbs ?? allNums[3];
+        }
+      }
+
+      if ([calories, protein, fat, carbs].some(v => v === null)) return null;
+
+      return {
+        name,
+        calories: round(calories, 0),
+        protein: round(protein, 1),
+        fat: round(fat, 1),
+        carbs: round(carbs, 1)
+      };
+    }
+
+    function App() {
       const mainRef = useRef(null);
 
-      const [foodNameInput, setFoodNameInput] = useState("");
+      const [goals, setGoals] = useState(() => JSON.parse(localStorage.getItem(STORAGE.goals)) || defaultGoals);
+      const [foods, setFoods] = useState(() => JSON.parse(localStorage.getItem(STORAGE.foods)) || defaultFoods);
+      const [dailyLogs, setDailyLogs] = useState(() => JSON.parse(localStorage.getItem(STORAGE.logs)) || {});
+      const [currentDate, setCurrentDate] = useState(today);
+      const [activeTab, setActiveTab] = useState("diary");
+
+      const [selectedFoodId, setSelectedFoodId] = useState("");
       const [gramsInput, setGramsInput] = useState("");
 
-      const [showFoodBase, setShowFoodBase] = useState(false);
-      const [showTrainingBase, setShowTrainingBase] = useState(false);
-      const [showDaySettings, setShowDaySettings] = useState(false);
-
       const [newFood, setNewFood] = useState({ name: "", calories: "", protein: "", fat: "", carbs: "" });
+      const [pasteText, setPasteText] = useState("");
       const [editingFoodId, setEditingFoodId] = useState(null);
       const [editingFood, setEditingFood] = useState(null);
 
       const [editingLogId, setEditingLogId] = useState(null);
-      const [editingLog, setEditingLog] = useState({ foodName: "", grams: "" });
+      const [editingLog, setEditingLog] = useState({ foodId: "", grams: "" });
 
-      const [newExercise, setNewExercise] = useState({ title: "", unit: "reps", target: "30" });
-      const [editingExerciseId, setEditingExerciseId] = useState(null);
-      const [editingExercise, setEditingExercise] = useState(null);
-
-      useEffect(() => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      }, [state]);
+      useEffect(() => localStorage.setItem(STORAGE.goals, JSON.stringify(goals)), [goals]);
+      useEffect(() => localStorage.setItem(STORAGE.foods, JSON.stringify(foods)), [foods]);
+      useEffect(() => localStorage.setItem(STORAGE.logs, JSON.stringify(dailyLogs)), [dailyLogs]);
 
       useEffect(() => {
-        if (mainRef.current) {
-          mainRef.current.scrollTop = 0;
-        }
+        if (mainRef.current) mainRef.current.scrollTop = 0;
       }, [activeTab, currentDate]);
 
-      function getTrainingForDate(date) {
-        if (state.trainingsByDate?.[date]) return state.trainingsByDate[date];
-        return cloneTemplate(state.trainingTemplate || []);
-      }
-
-      function ensureTrainingForDate(date) {
-        if (state.trainingsByDate?.[date]) return;
-
-        setState(prev => ({
-          ...prev,
-          trainingsByDate: {
-            ...(prev.trainingsByDate || {}),
-            [date]: cloneTemplate(prev.trainingTemplate || [])
-          }
-        }));
-      }
-
-      useEffect(() => {
-        ensureTrainingForDate(currentDate);
-      }, [currentDate]);
-
-      const goals = getGoalsFromState(state, currentDate);
-      const measures = state.measurementsByDate?.[currentDate] || { weight: "", waist: "" };
-      const currentTraining = getTrainingForDate(currentDate);
-      const currentDayLogs = state.foodLogsByDate?.[currentDate] || [];
+      const currentDayLogs = dailyLogs[currentDate] || [];
 
       const totals = useMemo(() => {
-        return currentDayLogs.reduce((sumObj, log) => {
-          sumObj.calories += num(log.totalCalories);
-          sumObj.protein += num(log.totalProtein);
-          sumObj.fat += num(log.totalFat);
-          sumObj.carbs += num(log.totalCarbs);
-          return sumObj;
+        return currentDayLogs.reduce((sum, log) => {
+          sum.calories += num(log.totalCalories);
+          sum.protein += num(log.totalProtein);
+          sum.fat += num(log.totalFat);
+          sum.carbs += num(log.totalCarbs);
+          return sum;
         }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
       }, [currentDayLogs]);
 
-      const remaining = {
-        calories: num(goals.calories) - totals.calories,
-        protein: num(goals.protein) - totals.protein,
-        fat: num(goals.fat) - totals.fat,
-        carbs: num(goals.carbs) - totals.carbs
-      };
-
-      const trainingSummary = useMemo(() => {
-        const items = currentTraining || [];
-        const progresses = items.map(ex => {
-          const target = getTarget(ex);
-          const actual = getActual(ex);
-          return target ? Math.min(100, (actual / target) * 100) : 0;
-        });
-        const avg = progresses.length ? progresses.reduce((a, b) => a + b, 0) / progresses.length : 0;
-        const completed = progresses.filter(x => x >= 100).length;
-        return { avg, completed, total: items.length };
-      }, [currentTraining]);
+      const remainingCalories = num(goals.calories) - totals.calories;
 
       function calcFood(food, gramsValue) {
         const grams = num(gramsValue);
@@ -393,27 +328,17 @@
         };
       }
 
-      function findFoodByName(name) {
-        const clean = String(name || "").trim().toLowerCase();
-        return state.foods.find(f => f.name.trim().toLowerCase() === clean);
-      }
-
-      function addFoodLog(e) {
+      function addLog(e) {
         e.preventDefault();
 
-        const food = findFoodByName(foodNameInput);
+        const food = foods.find(f => f.id === selectedFoodId);
         const grams = num(gramsInput);
 
-        if (!food) {
-          alert("Такого продукта нет в базе. Добавь его через кнопку «База продуктов».");
-          return;
-        }
-
-        if (!grams) return;
+        if (!food || !grams) return;
 
         const calculated = calcFood(food, grams);
 
-        const log = {
+        const newLog = {
           id: Date.now().toString(),
           foodId: food.id,
           foodName: food.name,
@@ -424,88 +349,108 @@
           totalCarbs: calculated.carbs
         };
 
-        setState(prev => ({
+        setDailyLogs(prev => ({
           ...prev,
-          foodLogsByDate: {
-            ...(prev.foodLogsByDate || {}),
-            [currentDate]: [...(prev.foodLogsByDate?.[currentDate] || []), log]
-          }
+          [currentDate]: [...(prev[currentDate] || []), newLog]
         }));
 
-        setFoodNameInput("");
+        setSelectedFoodId("");
         setGramsInput("");
       }
 
-      function deleteFoodLog(logId) {
-        setState(prev => ({
+      function deleteLog(logId) {
+        setDailyLogs(prev => ({
           ...prev,
-          foodLogsByDate: {
-            ...(prev.foodLogsByDate || {}),
-            [currentDate]: (prev.foodLogsByDate?.[currentDate] || []).filter(l => l.id !== logId)
-          }
+          [currentDate]: (prev[currentDate] || []).filter(l => l.id !== logId)
         }));
       }
 
       function startEditLog(log) {
         setEditingLogId(log.id);
-        setEditingLog({ foodName: log.foodName, grams: String(log.grams) });
+        setEditingLog({ foodId: log.foodId, grams: String(log.grams) });
       }
 
       function saveEditLog() {
-        const food = findFoodByName(editingLog.foodName);
+        const food = foods.find(f => f.id === editingLog.foodId);
         const grams = num(editingLog.grams);
 
-        if (!food) {
-          alert("Такого продукта нет в базе.");
-          return;
-        }
-
-        if (!grams) return;
+        if (!food || !grams) return;
 
         const calculated = calcFood(food, grams);
 
-        setState(prev => ({
+        setDailyLogs(prev => ({
           ...prev,
-          foodLogsByDate: {
-            ...(prev.foodLogsByDate || {}),
-            [currentDate]: (prev.foodLogsByDate?.[currentDate] || []).map(log => log.id === editingLogId ? {
-              ...log,
-              foodId: food.id,
-              foodName: food.name,
-              grams,
-              totalCalories: calculated.calories,
-              totalProtein: calculated.protein,
-              totalFat: calculated.fat,
-              totalCarbs: calculated.carbs
-            } : log)
-          }
+          [currentDate]: (prev[currentDate] || []).map(log => log.id === editingLogId ? {
+            ...log,
+            foodId: food.id,
+            foodName: food.name,
+            grams,
+            totalCalories: calculated.calories,
+            totalProtein: calculated.protein,
+            totalFat: calculated.fat,
+            totalCarbs: calculated.carbs
+          } : log)
         }));
 
         setEditingLogId(null);
-        setEditingLog({ foodName: "", grams: "" });
+        setEditingLog({ foodId: "", grams: "" });
       }
 
-      function saveNewFood(e) {
+      function saveFood(e) {
         e.preventDefault();
 
         if (!newFood.name.trim()) return;
 
-        setState(prev => ({
+        setFoods(prev => [
           ...prev,
-          foods: [
-            ...(prev.foods || []),
-            {
-              id: Date.now().toString(),
-              name: newFood.name.trim(),
-              calories: num(newFood.calories),
-              protein: num(newFood.protein),
-              fat: num(newFood.fat),
-              carbs: num(newFood.carbs)
-            }
-          ]
-        }));
+          {
+            id: Date.now().toString(),
+            name: newFood.name.trim(),
+            calories: num(newFood.calories),
+            protein: num(newFood.protein),
+            fat: num(newFood.fat),
+            carbs: num(newFood.carbs)
+          }
+        ]);
 
         setNewFood({ name: "", calories: "", protein: "", fat: "", carbs: "" });
+      }
+
+      function addProductFromPaste() {
+        const parsed = parseProductFromText(pasteText);
+
+        if (!parsed) {
+          alert("Не смог распознать. В тексте должны быть ккал, белки, жиры и углеводы на 100 г.");
+          return;
+        }
+
+        setFoods(prev => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            ...parsed
+          }
+        ]);
+
+        setPasteText("");
+        alert(`Добавил продукт: ${parsed.name}`);
+      }
+
+      function fillProductFromPaste() {
+        const parsed = parseProductFromText(pasteText);
+
+        if (!parsed) {
+          alert("Не смог распознать. В тексте должны быть ккал, белки, жиры и углеводы на 100 г.");
+          return;
+        }
+
+        setNewFood({
+          name: parsed.name,
+          calories: String(parsed.calories),
+          protein: String(parsed.protein),
+          fat: String(parsed.fat),
+          carbs: String(parsed.carbs)
+        });
       }
 
       function startEditFood(food) {
@@ -516,178 +461,44 @@
       function saveEditFood() {
         if (!editingFood?.name?.trim()) return;
 
-        setState(prev => ({
-          ...prev,
-          foods: prev.foods.map(f => f.id === editingFoodId ? {
-            ...f,
-            name: editingFood.name.trim(),
-            calories: num(editingFood.calories),
-            protein: num(editingFood.protein),
-            fat: num(editingFood.fat),
-            carbs: num(editingFood.carbs)
-          } : f)
-        }));
+        setFoods(prev => prev.map(f => f.id === editingFoodId ? {
+          ...f,
+          name: editingFood.name.trim(),
+          calories: num(editingFood.calories),
+          protein: num(editingFood.protein),
+          fat: num(editingFood.fat),
+          carbs: num(editingFood.carbs)
+        } : f));
 
         setEditingFoodId(null);
         setEditingFood(null);
       }
 
       function deleteFood(foodId) {
-        setState(prev => ({
-          ...prev,
-          foods: prev.foods.filter(f => f.id !== foodId)
-        }));
+        setFoods(prev => prev.filter(f => f.id !== foodId));
       }
 
-      function updateGoalsForDate(key, value) {
-        setState(prev => ({
-          ...prev,
-          goalsByDate: {
-            ...(prev.goalsByDate || {}),
-            [currentDate]: {
-              ...getGoalsFromState(prev, currentDate),
-              [key]: value
-            }
-          }
-        }));
-      }
-
-      function updateMeasurement(key, value) {
-        setState(prev => ({
-          ...prev,
-          measurementsByDate: {
-            ...(prev.measurementsByDate || {}),
-            [currentDate]: {
-              ...(prev.measurementsByDate?.[currentDate] || {}),
-              [key]: value
-            }
-          }
-        }));
-      }
-
-      function updateExerciseActual(exId, value) {
-        setState(prev => {
-          const dayList = prev.trainingsByDate?.[currentDate] || cloneTemplate(prev.trainingTemplate || []);
-          const updated = dayList.map(ex => ex.id === exId ? { ...ex, actual: value } : ex);
-
-          return {
-            ...prev,
-            trainingsByDate: {
-              ...(prev.trainingsByDate || {}),
-              [currentDate]: updated
-            }
-          };
-        });
-      }
-
-      function toggleExerciseDone(ex) {
-        const target = getTarget(ex);
-        const actual = getActual(ex);
-        updateExerciseActual(ex.id, actual >= target && target > 0 ? "" : String(target));
-      }
-
-      function saveNewExercise(e) {
-        e.preventDefault();
-
-        if (!newExercise.title.trim()) return;
-
-        const id = Date.now().toString();
-        const templateExercise = {
-          id,
-          title: newExercise.title.trim(),
-          unit: newExercise.unit,
-          target: num(newExercise.target)
-        };
-
-        setState(prev => {
-          const dayList = prev.trainingsByDate?.[currentDate] || cloneTemplate(prev.trainingTemplate || []);
-
-          return {
-            ...prev,
-            trainingTemplate: [...(prev.trainingTemplate || []), templateExercise],
-            trainingsByDate: {
-              ...(prev.trainingsByDate || {}),
-              [currentDate]: [...dayList, cloneExercise(templateExercise)]
-            }
-          };
-        });
-
-        setNewExercise({
-          title: "",
-          unit: "reps",
-          target: "30"
-        });
-      }
-
-      function startEditExercise(ex) {
-        setEditingExerciseId(ex.id);
-        setEditingExercise({ ...ex, target: getTarget(ex) });
-      }
-
-      function saveEditExercise() {
-        if (!editingExercise?.title?.trim()) return;
-
-        const updatedTemplate = {
-          id: editingExerciseId,
-          title: editingExercise.title.trim(),
-          unit: editingExercise.unit,
-          target: num(editingExercise.target)
-        };
-
-        setState(prev => ({
-          ...prev,
-          trainingTemplate: prev.trainingTemplate.map(ex => ex.id === editingExerciseId ? updatedTemplate : ex),
-          trainingsByDate: {
-            ...(prev.trainingsByDate || {}),
-            [currentDate]: (prev.trainingsByDate?.[currentDate] || cloneTemplate(prev.trainingTemplate || [])).map(ex => ex.templateId === editingExerciseId ? {
-              ...ex,
-              title: updatedTemplate.title,
-              unit: updatedTemplate.unit,
-              target: updatedTemplate.target
-            } : ex)
-          }
-        }));
-
-        setEditingExerciseId(null);
-        setEditingExercise(null);
-      }
-
-      function deleteExercise(exId) {
-        setState(prev => ({
-          ...prev,
-          trainingTemplate: prev.trainingTemplate.filter(ex => ex.id !== exId),
-          trainingsByDate: {
-            ...(prev.trainingsByDate || {}),
-            [currentDate]: (prev.trainingsByDate?.[currentDate] || []).filter(ex => ex.templateId !== exId)
-          }
-        }));
-      }
-
-      function applyTemplateToCurrentDay() {
-        if (!confirm("Заменить тренировку этого дня новым шаблоном? Введённый прогресс за этот день сотрётся.")) return;
-
-        setState(prev => ({
-          ...prev,
-          trainingsByDate: {
-            ...(prev.trainingsByDate || {}),
-            [currentDate]: cloneTemplate(prev.trainingTemplate || [])
-          }
-        }));
+      function changeDate(offset) {
+        const d = new Date(currentDate);
+        d.setDate(d.getDate() + offset);
+        setCurrentDate(getLocalDateString(d));
+        setEditingLogId(null);
       }
 
       function exportBackup() {
-        const backup = {
-          ...state,
-          appVersion: 18,
-          exportedAt: new Date().toISOString(),
-          currentDate
+        const data = {
+          version: 2,
+          goals,
+          foods,
+          dailyLogs,
+          exportedAt: new Date().toISOString()
         };
 
-        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `kbju-tracker-backup-${currentDate}.json`;
+        a.download = `diet-tracker-backup-${currentDate}.json`;
         a.click();
         URL.revokeObjectURL(url);
       }
@@ -697,111 +508,63 @@
         if (!file) return;
 
         const reader = new FileReader();
-
         reader.onload = () => {
           try {
             const data = JSON.parse(reader.result);
-            setState(normalizeLoadedState(data));
+            if (data.goals) setGoals(data.goals);
+            if (data.foods) setFoods(data.foods);
+            if (data.dailyLogs) setDailyLogs(data.dailyLogs);
             alert("Backup восстановлен");
           } catch {
             alert("Не получилось прочитать backup");
           }
         };
-
         reader.readAsText(file);
       }
 
-      function changeDate(offset) {
-        const d = new Date(currentDate);
-        d.setDate(d.getDate() + offset);
-        setCurrentDate(getLocalDateString(d));
-        setShowFoodBase(false);
-        setShowTrainingBase(false);
-        setShowDaySettings(false);
-        setEditingLogId(null);
-      }
-
-      function goToday() {
-        setCurrentDate(today);
-        setShowFoodBase(false);
-        setShowTrainingBase(false);
-        setShowDaySettings(false);
-        setEditingLogId(null);
-      }
-
-      function changeTab(tab) {
+      function switchTab(tab) {
         setActiveTab(tab);
-        setShowFoodBase(false);
-        setShowTrainingBase(false);
-        setShowDaySettings(false);
-        setEditingLogId(null);
         setEditingFoodId(null);
         setEditingFood(null);
-        setEditingExerciseId(null);
-        setEditingExercise(null);
+        setEditingLogId(null);
       }
 
-      const previewFood = findFoodByName(foodNameInput);
-      const preview = previewFood && gramsInput ? calcFood(previewFood, gramsInput) : null;
+      const selectedFood = foods.find(f => f.id === selectedFoodId);
+      const preview = selectedFood && gramsInput ? calcFood(selectedFood, gramsInput) : null;
 
       return (
-        <div className="app-shell flex flex-col w-full max-w-md mx-auto bg-[#09090b] text-zinc-100 font-sans shadow-2xl border-x border-zinc-900">
-          <header className="shrink-0 safe-pt px-6 pb-4 bg-[#09090b] border-b border-zinc-800">
-            <div className="flex justify-between items-start gap-3">
-              <div>
-                <h1 className="text-lg font-bold">
-                  {activeTab === "home" && "Главная"}
-                  {activeTab === "food" && "Еда"}
-                  {activeTab === "training" && "Тренировка"}
-                </h1>
-                <p className="text-[10px] text-zinc-500 font-bold uppercase mt-1">КБЖУ · дефицит · база</p>
-              </div>
-
-              <div className="flex items-start gap-2">
-                <div className="text-right">
-                  <div className={`text-lg font-black ${remaining.calories < 0 ? "text-rose-400" : "text-emerald-400"}`}>
-                    {Math.round(remaining.calories)}
-                  </div>
-                  <div className="text-[9px] text-zinc-500 font-bold uppercase">ккал осталось</div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowDaySettings(!showDaySettings)}
-                  className={`fast-touch w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${showDaySettings ? "bg-sky-600 text-white" : "bg-[#18181b] text-zinc-500 active:text-zinc-200"}`}
-                >
-                  <IconSettings className="w-5 h-5" />
-                </button>
-              </div>
+        <div className="flex flex-col h-[100dvh] w-full max-w-md mx-auto bg-[#09090b] text-zinc-100 font-sans shadow-2xl border-x border-zinc-900">
+          <header className="shrink-0 pt-8 px-6 pb-4 bg-[#09090b] border-b border-zinc-800 flex justify-between items-center">
+            <div>
+              <h1 className="text-lg font-bold">{activeTab === "diary" ? "Дневник" : "База и цели"}</h1>
+              <p className="text-[10px] text-zinc-500 font-bold uppercase mt-1">Трекер питания</p>
             </div>
 
-            <div className="flex items-center justify-between bg-[#18181b] rounded-2xl p-1 border border-zinc-800/50 mt-4">
-              <button onClick={() => changeDate(-1)} className="fast-touch p-3 text-zinc-400 active:text-zinc-200 bg-transparent">
-                <IconChevronLeft className="w-5 h-5" />
-              </button>
-
-              <button onClick={goToday} className="fast-touch bg-transparent px-3 py-2">
-                <div className="font-bold text-sm text-zinc-200">{displayDate(currentDate)}</div>
-                <div className="text-[9px] text-zinc-600 font-bold uppercase">{currentDate}</div>
-              </button>
-
-              <button onClick={() => changeDate(1)} className="fast-touch p-3 text-zinc-400 active:text-zinc-200 bg-transparent">
-                <IconChevronRight className="w-5 h-5" />
-              </button>
+            <div className="text-right">
+              <div className={`text-lg font-black ${remainingCalories < 0 ? "text-rose-400" : "text-emerald-400"}`}>
+                {Math.round(remainingCalories)}
+              </div>
+              <div className="text-[9px] text-zinc-500 font-bold uppercase">ккал осталось</div>
             </div>
           </header>
 
           <main ref={mainRef} className="flex-1 overflow-y-auto px-5 pt-4 pb-8">
-            {activeTab === "home" && (
+            {activeTab === "diary" ? (
               <div className="space-y-6">
-                {showDaySettings && (
-                  <DaySettings
-                    goals={goals}
-                    measures={measures}
-                    updateGoalsForDate={updateGoalsForDate}
-                    updateMeasurement={updateMeasurement}
-                  />
-                )}
+                <div className="flex items-center justify-between bg-[#18181b] rounded-2xl p-1 border border-zinc-800/50">
+                  <button onClick={() => changeDate(-1)} className="fast-touch p-3 text-zinc-400 bg-transparent active:text-zinc-200">
+                    <IconChevronLeft className="w-5 h-5" />
+                  </button>
+
+                  <button onClick={() => setCurrentDate(today)} className="fast-touch bg-transparent px-3 py-2">
+                    <div className="font-bold text-sm text-zinc-200">{displayDate(currentDate)}</div>
+                    <div className="text-[9px] text-zinc-600 font-bold uppercase">{currentDate}</div>
+                  </button>
+
+                  <button onClick={() => changeDate(1)} className="fast-touch p-3 text-zinc-400 bg-transparent active:text-zinc-200">
+                    <IconChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
 
                 <div className="bg-[#18181b] rounded-3xl p-5 shadow-xl border border-zinc-800/50">
                   <div className="flex justify-between items-end mb-4">
@@ -813,147 +576,33 @@
                       </div>
                     </div>
 
-                    <div className={`text-right font-black ${remaining.calories < 0 ? "text-rose-400" : "text-emerald-400"}`}>
-                      <span className="text-2xl">{Math.round(Math.abs(remaining.calories))}</span>
-                      <span className="text-[10px] ml-1 uppercase">{remaining.calories < 0 ? "перебор" : "осталось"}</span>
+                    <div className={`text-right font-black ${remainingCalories < 0 ? "text-rose-400" : "text-emerald-400"}`}>
+                      <span className="text-2xl">{Math.round(Math.abs(remainingCalories))}</span>
+                      <span className="text-[10px] ml-1 uppercase">{remainingCalories < 0 ? "перебор" : "осталось"}</span>
                     </div>
                   </div>
 
-                  <ProgressBar value={pct(totals.calories, goals.calories)} color={remaining.calories < 0 ? "rose" : "emerald"} />
+                  <ProgressBar value={pct(totals.calories, goals.calories)} color={remainingCalories < 0 ? "rose" : "emerald"} />
 
                   <div className="grid grid-cols-3 gap-3 mt-5">
-                    <MacroMini label="Белок" value={totals.protein} target={goals.protein} color="indigo" />
-                    <MacroMini label="Жиры" value={totals.fat} target={goals.fat} color="amber" />
-                    <MacroMini label="Углев." value={totals.carbs} target={goals.carbs} color="sky" />
+                    <MacroCard label="Белок" value={totals.protein} target={goals.protein} color="indigo" />
+                    <MacroCard label="Жиры" value={totals.fat} target={goals.fat} color="amber" />
+                    <MacroCard label="Углев." value={totals.carbs} target={goals.carbs} color="sky" />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-[#18181b] rounded-3xl p-4 border border-zinc-800/50">
-                    <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2 mb-3">
-                      <IconScale className="w-4 h-4" /> Замеры
-                    </h2>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-[#27272a] rounded-2xl p-3">
-                        <div className="text-[9px] text-zinc-500 font-bold uppercase">Вес</div>
-                        <div className="font-black text-sky-400">{measures.weight || "—"}</div>
-                      </div>
-                      <div className="bg-[#27272a] rounded-2xl p-3">
-                        <div className="text-[9px] text-zinc-500 font-bold uppercase">Талия</div>
-                        <div className="font-black text-amber-400">{measures.waist || "—"}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-[#18181b] rounded-3xl p-4 border border-zinc-800/50">
-                    <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2 mb-3">
-                      <IconDumbbell className="w-4 h-4" /> Тренировка
-                    </h2>
-                    <div className="text-3xl font-black text-amber-400">{Math.round(trainingSummary.avg)}%</div>
-                    <div className="text-[10px] text-zinc-500 font-bold uppercase mb-3">{trainingSummary.completed}/{trainingSummary.total} выполнено</div>
-                    <ProgressBar value={trainingSummary.avg} color="amber" />
-                  </div>
-                </div>
-
-                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50">
-                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2 mb-4">
-                    <IconDumbbell className="w-4 h-4" /> Прогресс упражнений
-                  </h2>
-
-                  <div className="space-y-4">
-                    {currentTraining.map(ex => {
-                      const target = getTarget(ex);
-                      const actual = getActual(ex);
-                      const color = unitColor(ex.unit);
-
-                      return (
-                        <div key={ex.id}>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-bold text-zinc-200">{ex.title}</span>
-                            <span className={`text-xs font-black ${colorClass(color, "text")}`}>
-                              {round(actual, 0)} / {round(target, 0)} {unitLabel(ex.unit)}
-                            </span>
-                          </div>
-                          <ProgressBar value={pct(actual, target)} color={color} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50">
-                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2 mb-4">
-                    <IconBook className="w-4 h-4" /> Еда за день
-                  </h2>
-
-                  {currentDayLogs.length === 0 ? (
-                    <p className="text-sm text-zinc-500">Пока ничего не добавлено</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {currentDayLogs.slice(-5).reverse().map(log => (
-                        <div key={log.id} className="bg-[#27272a] rounded-2xl p-3 flex justify-between items-center">
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold truncate">{log.foodName}</p>
-                            <p className="text-[10px] text-zinc-500 font-bold uppercase">{log.grams} г</p>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-emerald-400 text-sm font-black">{log.totalCalories}</div>
-                            <div className="text-[9px] text-zinc-500 font-bold uppercase">ккал</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
-                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                    <IconDownload className="w-4 h-4" /> Backup для анализа
-                  </h2>
-
-                  <button onClick={exportBackup} className="fast-touch w-full bg-emerald-600 active:bg-emerald-700 text-white rounded-xl p-4 font-bold transition-transform active:scale-95">
-                    Скачать backup
-                  </button>
-
-                  <label className="block fast-touch w-full bg-[#27272a] active:bg-zinc-700 text-white rounded-xl p-4 font-bold text-center transition-transform active:scale-95">
-                    Загрузить backup
-                    <input type="file" accept="application/json" className="hidden" onChange={importBackup} />
-                  </label>
-
-                  <p className="text-xs text-zinc-500 leading-relaxed">
-                    Скачай JSON и скинь сюда — я смогу разобрать вес, талию, КБЖУ, еду и тренировки по датам.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {activeTab === "food" && (
-              <div className="space-y-6">
-                {showDaySettings && (
-                  <DaySettings
-                    goals={goals}
-                    measures={measures}
-                    updateGoalsForDate={updateGoalsForDate}
-                    updateMeasurement={updateMeasurement}
-                  />
-                )}
-
-                <form onSubmit={addFoodLog} className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
+                <form onSubmit={addLog} className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
                   <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Добавить еду</h2>
 
-                  <input
-                    list="foodOptions"
-                    type="text"
-                    placeholder="Выбери продукт из базы"
-                    className="w-full bg-[#27272a] rounded-2xl p-4 outline-none min-w-0 text-zinc-200"
-                    value={foodNameInput}
-                    onChange={(e) => setFoodNameInput(e.target.value)}
+                  <select
+                    className="w-full bg-[#27272a] rounded-2xl p-4 outline-none appearance-none text-zinc-200"
+                    value={selectedFoodId}
+                    onChange={(e) => setSelectedFoodId(e.target.value)}
                     required
-                  />
-
-                  <datalist id="foodOptions">
-                    {state.foods.map(f => <option key={f.id} value={f.name} />)}
-                  </datalist>
+                  >
+                    <option value="" disabled className="text-zinc-500">Что съели?</option>
+                    {foods.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                  </select>
 
                   <div className="flex gap-3">
                     <input
@@ -965,7 +614,6 @@
                       onChange={(e) => setGramsInput(e.target.value)}
                       required
                     />
-
                     <button type="submit" className="w-14 shrink-0 bg-emerald-600 rounded-2xl flex items-center justify-center fast-touch active:scale-95 transition-transform">
                       <IconPlus className="w-6 h-6 text-white" />
                     </button>
@@ -973,16 +621,16 @@
 
                   {preview && (
                     <div className="grid grid-cols-4 gap-2 pt-1">
-                      <PreviewBox color="text-emerald-400" value={preview.calories} label="ккал" />
-                      <PreviewBox color="text-indigo-400" value={preview.protein} label="б" />
-                      <PreviewBox color="text-amber-400" value={preview.fat} label="ж" />
-                      <PreviewBox color="text-sky-400" value={preview.carbs} label="у" />
+                      <SmallMacro color="text-emerald-400" value={preview.calories} label="ккал" />
+                      <SmallMacro color="text-indigo-400" value={preview.protein} label="б" />
+                      <SmallMacro color="text-amber-400" value={preview.fat} label="ж" />
+                      <SmallMacro color="text-sky-400" value={preview.carbs} label="у" />
                     </div>
                   )}
                 </form>
 
                 <div className="space-y-3">
-                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Еда за день</h2>
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Съедено за день</h2>
 
                   {currentDayLogs.length === 0 && (
                     <div className="bg-[#18181b] rounded-2xl p-5 text-center text-zinc-500 text-sm border border-zinc-800/30">
@@ -994,31 +642,26 @@
                     <div key={log.id} className="bg-[#18181b] rounded-2xl p-4 border border-zinc-800/30">
                       {editingLogId === log.id ? (
                         <div className="space-y-3">
-                          <div>
-                            <span className="text-[9px] text-zinc-500 font-bold block mb-1">ПРОДУКТ</span>
-                            <input
-                              list="foodOptions"
-                              type="text"
-                              className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-zinc-200"
-                              value={editingLog.foodName}
-                              onChange={(e) => setEditingLog({...editingLog, foodName: e.target.value})}
-                            />
-                          </div>
+                          <select
+                            className="w-full bg-[#27272a] rounded-xl p-3 outline-none appearance-none text-zinc-200"
+                            value={editingLog.foodId}
+                            onChange={(e) => setEditingLog({...editingLog, foodId: e.target.value})}
+                          >
+                            {foods.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                          </select>
 
-                          <div>
-                            <span className="text-[9px] text-zinc-500 font-bold block mb-1">ГРАММЫ</span>
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-emerald-400 font-bold"
-                              value={editingLog.grams}
-                              onChange={(e) => setEditingLog({...editingLog, grams: e.target.value})}
-                            />
-                          </div>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-emerald-400 font-bold"
+                            value={editingLog.grams}
+                            onChange={(e) => setEditingLog({...editingLog, grams: e.target.value})}
+                            placeholder="Граммы"
+                          />
 
                           <div className="grid grid-cols-2 gap-2">
                             <button onClick={saveEditLog} type="button" className="fast-touch bg-emerald-600 rounded-xl p-3 font-bold">Сохранить</button>
-                            <button onClick={() => { setEditingLogId(null); setEditingLog({ foodName: "", grams: "" }); }} type="button" className="fast-touch bg-[#27272a] rounded-xl p-3 font-bold">Отмена</button>
+                            <button onClick={() => setEditingLogId(null)} type="button" className="fast-touch bg-[#27272a] rounded-xl p-3 font-bold">Отмена</button>
                           </div>
                         </div>
                       ) : (
@@ -1042,7 +685,7 @@
                               <IconEdit className="w-5 h-5" />
                             </button>
 
-                            <button onClick={() => deleteFoodLog(log.id)} className="fast-touch text-zinc-700 active:text-red-400 p-1 bg-transparent">
+                            <button onClick={() => deleteLog(log.id)} className="fast-touch text-zinc-700 active:text-red-400 p-1 bg-transparent">
                               <IconTrash className="w-5 h-5" />
                             </button>
                           </div>
@@ -1051,395 +694,152 @@
                     </div>
                   ))}
                 </div>
-
-                <FoodBase
-                  foods={state.foods}
-                  newFood={newFood}
-                  setNewFood={setNewFood}
-                  saveNewFood={saveNewFood}
-                  editingFoodId={editingFoodId}
-                  editingFood={editingFood}
-                  setEditingFood={setEditingFood}
-                  startEditFood={startEditFood}
-                  saveEditFood={saveEditFood}
-                  cancelEdit={() => { setEditingFoodId(null); setEditingFood(null); }}
-                  deleteFood={deleteFood}
-                />
               </div>
-            )}
-
-            {activeTab === "training" && (
-              <div className="space-y-6">
-                {showDaySettings && (
-                  <DaySettings
-                    goals={goals}
-                    measures={measures}
-                    updateGoalsForDate={updateGoalsForDate}
-                    updateMeasurement={updateMeasurement}
-                  />
-                )}
-
+            ) : (
+              <div className="space-y-8">
                 <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50">
-                  <div className="flex justify-between items-end mb-4">
-                    <div>
-                      <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                        <IconDumbbell className="w-4 h-4" /> Тренировка дня
-                      </h2>
-                      <div className="text-4xl font-black text-amber-400 mt-2">{Math.round(trainingSummary.avg)}%</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-amber-400 font-black">{trainingSummary.completed}/{trainingSummary.total}</div>
-                      <div className="text-[9px] text-zinc-500 font-bold uppercase">готово</div>
-                    </div>
-                  </div>
-                  <ProgressBar value={trainingSummary.avg} color="amber" />
-                </div>
-
-                <div className="bg-[#18181b] rounded-3xl p-4 border border-zinc-800/50">
-                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2 mb-3">
-                    <IconDumbbell className="w-4 h-4" /> Быстрый ввод
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <IconTarget className="w-4 h-4" /> Дневные цели
                   </h2>
 
-                  <div className="space-y-2">
-                    {currentTraining.map(ex => {
-                      const target = getTarget(ex);
-                      const actual = getActual(ex);
-                      const color = unitColor(ex.unit);
-                      const percentDone = pct(actual, target);
-                      const done = target > 0 && actual >= target;
+                  <div className="grid grid-cols-2 gap-3">
+                    <InputBox label="ККАЛ" value={goals.calories} color="text-emerald-400" setValue={(v) => setGoals({...goals, calories: v})} />
+                    <InputBox label="БЕЛКИ" value={goals.protein} color="text-indigo-400" setValue={(v) => setGoals({...goals, protein: v})} />
+                    <InputBox label="ЖИРЫ" value={goals.fat} color="text-amber-400" setValue={(v) => setGoals({...goals, fat: v})} />
+                    <InputBox label="УГЛЕВОДЫ" value={goals.carbs} color="text-sky-400" setValue={(v) => setGoals({...goals, carbs: v})} />
+                  </div>
+                </div>
 
-                      return (
-                        <div key={ex.id} className={`rounded-2xl p-3 border ${done ? "bg-emerald-500/10 border-emerald-500/30" : "bg-[#27272a] border-zinc-700/40"}`}>
-                          <div className="flex items-center gap-3">
-                            <button
-                              type="button"
-                              onClick={() => toggleExerciseDone(ex)}
-                              className={`w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center text-xl font-black transition-transform active:scale-95 ${done ? "bg-emerald-600 text-white" : "bg-zinc-900 text-zinc-700 border border-zinc-700"}`}
-                            >
-                              {done ? "✓" : ""}
-                            </button>
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Вставить продукт из ответа ChatGPT</h2>
 
-                            <div className="flex-1 min-w-0">
-                              <div className="flex justify-between items-center gap-2 mb-2">
-                                <div className="min-w-0">
-                                  <h3 className="text-sm font-black truncate">{ex.title}</h3>
-                                  <p className="text-[10px] text-zinc-500 font-bold uppercase">
-                                    цель: {round(target, 0)} {unitLabel(ex.unit)}
-                                  </p>
-                                </div>
-                                <div className={`text-right ${colorClass(color, "text")} font-black shrink-0`}>
-                                  <div className="text-sm">{round(actual, 0)}/{round(target, 0)}</div>
-                                  <div className="text-[9px] uppercase">{Math.round(percentDone)}%</div>
-                                </div>
-                              </div>
-                              <ProgressBar value={percentDone} color={done ? "emerald" : color} />
-                            </div>
+                  <textarea
+                    className="w-full bg-[#27272a] rounded-2xl p-4 outline-none min-h-[120px] text-zinc-200"
+                    placeholder="Скопируй сюда мой ответ с КБЖУ. Например: Яйцо варёное... На 100 г: 155 ккал / Б 12.6 / Ж 10.6 / У 1.1"
+                    value={pasteText}
+                    onChange={(e) => setPasteText(e.target.value)}
+                  />
 
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              placeholder="0"
-                              className={`w-20 shrink-0 bg-zinc-900 rounded-xl p-3 text-center ${colorClass(color, "text")} font-black outline-none`}
-                              value={ex.actual || ""}
-                              onChange={(e) => updateExerciseActual(ex.id, e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button type="button" onClick={fillProductFromPaste} className="fast-touch bg-[#27272a] active:bg-zinc-700 text-white rounded-xl p-3 font-bold">
+                      Заполнить поля
+                    </button>
+
+                    <button type="button" onClick={addProductFromPaste} className="fast-touch bg-emerald-600 active:bg-emerald-700 text-white rounded-xl p-3 font-bold">
+                      Добавить сразу
+                    </button>
                   </div>
 
-                  <p className="text-xs text-zinc-500 leading-relaxed mt-4">
-                    Галочка = дневная норма выполнена. Если сделал частично — впиши число справа.
+                  <p className="text-xs text-zinc-500 leading-relaxed">
+                    Лучше вставлять данные «на 100 г». Если в ответе есть и «на 100 г», и «на 1 штуку», приложение старается брать именно «на 100 г».
                   </p>
                 </div>
 
-                <TrainingBase
-                  template={state.trainingTemplate}
-                  newExercise={newExercise}
-                  setNewExercise={setNewExercise}
-                  saveNewExercise={saveNewExercise}
-                  editingExerciseId={editingExerciseId}
-                  editingExercise={editingExercise}
-                  setEditingExercise={setEditingExercise}
-                  startEditExercise={startEditExercise}
-                  saveEditExercise={saveEditExercise}
-                  cancelEdit={() => { setEditingExerciseId(null); setEditingExercise(null); }}
-                  deleteExercise={deleteExercise}
-                  applyTemplateToCurrentDay={applyTemplateToCurrentDay}
-                />
+                <form onSubmit={saveFood} className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-4">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Новый продукт на 100 г</h2>
+
+                  <InputBox label="НАЗВАНИЕ" type="text" value={newFood.name} color="text-zinc-200" placeholder="Название" setValue={(v) => setNewFood({...newFood, name: v})} />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <InputBox label="ККАЛ" value={newFood.calories} color="text-emerald-400" setValue={(v) => setNewFood({...newFood, calories: v})} />
+                    <InputBox label="БЕЛКИ" value={newFood.protein} color="text-indigo-400" setValue={(v) => setNewFood({...newFood, protein: v})} />
+                    <InputBox label="ЖИРЫ" value={newFood.fat} color="text-amber-400" setValue={(v) => setNewFood({...newFood, fat: v})} />
+                    <InputBox label="УГЛЕВОДЫ" value={newFood.carbs} color="text-sky-400" setValue={(v) => setNewFood({...newFood, carbs: v})} />
+                  </div>
+
+                  <button type="submit" className="fast-touch w-full bg-indigo-600 active:bg-indigo-700 text-white rounded-xl p-4 font-bold transition-transform active:scale-95">
+                    Добавить продукт
+                  </button>
+                </form>
+
+                <div className="space-y-2">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase mb-2">Список продуктов ({foods.length})</h2>
+
+                  {foods.map(f => (
+                    <div key={f.id} className="bg-[#18181b] rounded-xl p-3 border border-zinc-800/30">
+                      {editingFoodId === f.id ? (
+                        <div className="space-y-3">
+                          <InputBox label="НАЗВАНИЕ" type="text" value={editingFood.name} color="text-zinc-200" setValue={(v) => setEditingFood({...editingFood, name: v})} />
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <InputBox label="ККАЛ" value={editingFood.calories} color="text-emerald-400" setValue={(v) => setEditingFood({...editingFood, calories: v})} />
+                            <InputBox label="БЕЛКИ" value={editingFood.protein} color="text-indigo-400" setValue={(v) => setEditingFood({...editingFood, protein: v})} />
+                            <InputBox label="ЖИРЫ" value={editingFood.fat} color="text-amber-400" setValue={(v) => setEditingFood({...editingFood, fat: v})} />
+                            <InputBox label="УГЛЕВОДЫ" value={editingFood.carbs} color="text-sky-400" setValue={(v) => setEditingFood({...editingFood, carbs: v})} />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <button onClick={saveEditFood} type="button" className="fast-touch bg-emerald-600 rounded-xl p-3 font-bold">Сохранить</button>
+                            <button onClick={() => {setEditingFoodId(null); setEditingFood(null);}} type="button" className="fast-touch bg-[#27272a] rounded-xl p-3 font-bold">Отмена</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex justify-between items-center gap-3">
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium truncate block">{f.name}</span>
+                            <div className="flex gap-2 text-[10px] font-bold uppercase mt-1 flex-wrap">
+                              <span className="text-emerald-500">{f.calories} ккал</span>
+                              <span className="text-indigo-500">Б {f.protein || 0}</span>
+                              <span className="text-amber-500">Ж {f.fat || 0}</span>
+                              <span className="text-sky-500">У {f.carbs || 0}</span>
+                            </div>
+                          </div>
+
+                          <button onClick={() => startEditFood(f)} className="fast-touch text-zinc-600 active:text-indigo-400 p-2 bg-transparent">
+                            <IconEdit className="w-5 h-5" />
+                          </button>
+
+                          <button onClick={() => deleteFood(f.id)} className="fast-touch text-zinc-800 active:text-red-500 p-2 bg-transparent">
+                            <IconTrash className="w-5 h-5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                    <IconDownload className="w-4 h-4" /> Backup
+                  </h2>
+
+                  <button onClick={exportBackup} className="fast-touch w-full bg-emerald-600 active:bg-emerald-700 text-white rounded-xl p-4 font-bold transition-transform active:scale-95">
+                    Скачать backup
+                  </button>
+
+                  <label className="block fast-touch w-full bg-[#27272a] active:bg-zinc-700 text-white rounded-xl p-4 font-bold text-center transition-transform active:scale-95">
+                    Загрузить backup
+                    <input type="file" accept="application/json" className="hidden" onChange={importBackup} />
+                  </label>
+
+                  <p className="text-xs text-zinc-500 leading-relaxed">
+                    Скачай JSON и скинь мне сюда — я смогу проанализировать КБЖУ, продукты и динамику по дням.
+                  </p>
+                </div>
               </div>
             )}
-
-
           </main>
 
-          <nav className="shrink-0 bg-[#18181b] border-t border-zinc-800 grid grid-cols-3 pt-2 safe-pb relative z-40">
-            <button onClick={() => changeTab("home")} className={`fast-touch flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "home" ? "text-emerald-400" : "text-zinc-600 active:text-zinc-400"}`}>
+          <nav className="shrink-0 bg-[#18181b] border-t border-zinc-800 flex justify-around pt-2 safe-pb relative z-40">
+            <button onClick={() => switchTab("diary")} className={`fast-touch flex-1 flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "diary" ? "text-emerald-400" : "text-zinc-600 active:text-zinc-400"}`}>
               <IconCalendar className="w-6 h-6" />
-              <span className="text-[9px] font-bold mt-1 uppercase">Главная</span>
+              <span className="text-[9px] font-bold mt-1 uppercase">Дневник</span>
             </button>
 
-            <button onClick={() => changeTab("food")} className={`fast-touch flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "food" ? "text-indigo-400" : "text-zinc-600 active:text-zinc-400"}`}>
+            <button onClick={() => switchTab("directory")} className={`fast-touch flex-1 flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "directory" ? "text-indigo-400" : "text-zinc-600 active:text-zinc-400"}`}>
               <IconBook className="w-6 h-6" />
-              <span className="text-[9px] font-bold mt-1 uppercase">Еда</span>
-            </button>
-
-            <button onClick={() => changeTab("training")} className={`fast-touch flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "training" ? "text-amber-400" : "text-zinc-600 active:text-zinc-400"}`}>
-              <IconDumbbell className="w-6 h-6" />
-              <span className="text-[9px] font-bold mt-1 uppercase">Трен</span>
+              <span className="text-[9px] font-bold mt-1 uppercase">База</span>
             </button>
           </nav>
         </div>
       );
     }
 
-    function PreviewBox({ color, value, label }) {
+    function SmallMacro({ color, value, label }) {
       return (
         <div className="text-center bg-zinc-900 rounded-xl p-2">
           <div className={`${color} font-black text-sm`}>{value}</div>
           <div className="text-[8px] text-zinc-500 font-bold uppercase">{label}</div>
-        </div>
-      );
-    }
-
-    function DaySettings({ goals, measures, updateGoalsForDate, updateMeasurement }) {
-      return (
-        <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50">
-          <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-            <IconTarget className="w-4 h-4" /> Данные текущей даты
-          </h2>
-
-          <div className="grid grid-cols-2 gap-3">
-            <InputBox label="ККАЛ" value={goals.calories} color="text-emerald-400" onChange={(v) => updateGoalsForDate("calories", v)} />
-            <InputBox label="БЕЛОК" value={goals.protein} color="text-indigo-400" onChange={(v) => updateGoalsForDate("protein", v)} />
-            <InputBox label="ЖИРЫ" value={goals.fat} color="text-amber-400" onChange={(v) => updateGoalsForDate("fat", v)} />
-            <InputBox label="УГЛЕВОДЫ" value={goals.carbs} color="text-sky-400" onChange={(v) => updateGoalsForDate("carbs", v)} />
-            <InputBox label="ВЕС" value={measures.weight || ""} color="text-sky-400" placeholder="кг" onChange={(v) => updateMeasurement("weight", v)} />
-            <InputBox label="ТАЛИЯ" value={measures.waist || ""} color="text-amber-400" placeholder="см" onChange={(v) => updateMeasurement("waist", v)} />
-          </div>
-
-          <p className="text-xs text-zinc-500 leading-relaxed mt-4">
-            Цели копируются с ближайшей предыдущей даты, пока ты их не изменил для выбранного дня.
-          </p>
-        </div>
-      );
-    }
-
-    function InputBox({ label, value, onChange, color, placeholder = "" }) {
-      return (
-        <div>
-          <span className="text-[9px] text-zinc-500 font-bold block mb-1">{label}</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            className={`w-full bg-[#27272a] rounded-xl p-3 ${color} font-bold outline-none min-w-0`}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
-          />
-        </div>
-      );
-    }
-
-    function LabeledInput({ label, value, onChange, color, placeholder = "", required = false }) {
-      return (
-        <div>
-          <span className="text-[9px] text-zinc-500 font-bold block mb-1">{label}</span>
-          <input
-            type={label === "НАЗВАНИЕ" ? "text" : "number"}
-            inputMode={label === "НАЗВАНИЕ" ? "text" : "decimal"}
-            placeholder={placeholder}
-            className={`w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 ${color} font-bold`}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            required={required}
-          />
-        </div>
-      );
-    }
-
-    function FoodBase({
-      foods,
-      newFood,
-      setNewFood,
-      saveNewFood,
-      editingFoodId,
-      editingFood,
-      setEditingFood,
-      startEditFood,
-      saveEditFood,
-      cancelEdit,
-      deleteFood
-    }) {
-      return (
-        <div className="space-y-5">
-          <form onSubmit={saveNewFood} className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-4">
-            <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Новый продукт на 100 г</h2>
-
-            <LabeledInput label="НАЗВАНИЕ" value={newFood.name} color="text-zinc-200" placeholder="Название" onChange={(v) => setNewFood({...newFood, name: v})} required />
-
-            <div className="grid grid-cols-2 gap-3">
-              <LabeledInput label="ККАЛ" value={newFood.calories} color="text-emerald-400" placeholder="Ккал" onChange={(v) => setNewFood({...newFood, calories: v})} required />
-              <LabeledInput label="БЕЛКИ" value={newFood.protein} color="text-indigo-400" placeholder="Белки" onChange={(v) => setNewFood({...newFood, protein: v})} required />
-              <LabeledInput label="ЖИРЫ" value={newFood.fat} color="text-amber-400" placeholder="Жиры" onChange={(v) => setNewFood({...newFood, fat: v})} required />
-              <LabeledInput label="УГЛЕВОДЫ" value={newFood.carbs} color="text-sky-400" placeholder="Углеводы" onChange={(v) => setNewFood({...newFood, carbs: v})} required />
-            </div>
-
-            <button type="submit" className="fast-touch w-full bg-indigo-600 active:bg-indigo-700 text-white rounded-xl p-4 font-bold transition-transform active:scale-95">
-              Добавить продукт
-            </button>
-          </form>
-
-          <div className="space-y-2">
-            <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Список продуктов ({foods.length})</h2>
-
-            {foods.map(f => (
-              <div key={f.id} className="bg-[#18181b] rounded-xl p-3 border border-zinc-800/30">
-                {editingFoodId === f.id ? (
-                  <div className="space-y-3">
-                    <LabeledInput label="НАЗВАНИЕ" value={editingFood.name} color="text-zinc-200" placeholder="Название" onChange={(v) => setEditingFood({...editingFood, name: v})} />
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <LabeledInput label="ККАЛ" value={editingFood.calories} color="text-emerald-400" placeholder="Ккал" onChange={(v) => setEditingFood({...editingFood, calories: v})} />
-                      <LabeledInput label="БЕЛКИ" value={editingFood.protein} color="text-indigo-400" placeholder="Белки" onChange={(v) => setEditingFood({...editingFood, protein: v})} />
-                      <LabeledInput label="ЖИРЫ" value={editingFood.fat} color="text-amber-400" placeholder="Жиры" onChange={(v) => setEditingFood({...editingFood, fat: v})} />
-                      <LabeledInput label="УГЛЕВОДЫ" value={editingFood.carbs} color="text-sky-400" placeholder="Углеводы" onChange={(v) => setEditingFood({...editingFood, carbs: v})} />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <button onClick={saveEditFood} type="button" className="fast-touch bg-emerald-600 rounded-xl p-3 font-bold">Сохранить</button>
-                      <button onClick={cancelEdit} type="button" className="fast-touch bg-[#27272a] rounded-xl p-3 font-bold">Отмена</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex justify-between items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium truncate block">{f.name}</span>
-                      <div className="flex gap-2 text-[10px] font-bold uppercase mt-1 flex-wrap">
-                        <span className="text-emerald-500">{f.calories} ккал</span>
-                        <span className="text-indigo-500">Б {f.protein || 0}</span>
-                        <span className="text-amber-500">Ж {f.fat || 0}</span>
-                        <span className="text-sky-500">У {f.carbs || 0}</span>
-                      </div>
-                    </div>
-
-                    <button onClick={() => startEditFood(f)} className="fast-touch text-zinc-600 active:text-indigo-400 p-2 bg-transparent">
-                      <IconEdit className="w-5 h-5" />
-                    </button>
-
-                    <button onClick={() => deleteFood(f.id)} className="fast-touch text-zinc-800 active:text-red-500 p-2 bg-transparent">
-                      <IconTrash className="w-5 h-5" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    function TrainingBase({
-      template,
-      newExercise,
-      setNewExercise,
-      saveNewExercise,
-      editingExerciseId,
-      editingExercise,
-      setEditingExercise,
-      startEditExercise,
-      saveEditExercise,
-      cancelEdit,
-      deleteExercise,
-      applyTemplateToCurrentDay
-    }) {
-      return (
-        <div className="space-y-5">
-          <form onSubmit={saveNewExercise} className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-4">
-            <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Новое упражнение</h2>
-
-            <LabeledInput label="НАЗВАНИЕ" value={newExercise.title} color="text-zinc-200" placeholder="Например: Отжимания" onChange={(v) => setNewExercise({...newExercise, title: v})} required />
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <span className="text-[9px] text-zinc-500 font-bold block mb-1">ЕДИНИЦА</span>
-                <select className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-zinc-200" value={newExercise.unit} onChange={(e) => setNewExercise({...newExercise, unit: e.target.value, target: e.target.value === "steps" ? "7000" : e.target.value === "sec" ? "90" : "30"})}>
-                  <option value="reps">Повторы</option>
-                  <option value="sec">Секунды</option>
-                  <option value="steps">Шаги</option>
-                </select>
-              </div>
-
-              <LabeledInput label="ЦЕЛЬ" value={newExercise.target} color="text-amber-400" placeholder="30" onChange={(v) => setNewExercise({...newExercise, target: v})} required />
-            </div>
-
-            <button type="submit" className="fast-touch w-full bg-amber-600 active:bg-amber-700 text-white rounded-xl p-4 font-bold transition-transform active:scale-95">
-              Добавить упражнение
-            </button>
-
-            <p className="text-xs text-zinc-500 leading-relaxed">
-              Теперь цель одна: например 30 отжиманий, 90 секунд планки или 7000 шагов.
-            </p>
-          </form>
-
-          <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50">
-            <button onClick={applyTemplateToCurrentDay} className="fast-touch w-full bg-[#27272a] active:bg-zinc-700 text-white rounded-xl p-4 font-bold">
-              Применить шаблон к этому дню
-            </button>
-            <p className="text-xs text-zinc-500 leading-relaxed mt-3">
-              Новые упражнения сразу появляются сегодня. Эта кнопка нужна, если хочешь полностью заменить тренировку дня новым шаблоном.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Шаблон упражнений ({template.length})</h2>
-
-            {template.map(ex => (
-              <div key={ex.id} className="bg-[#18181b] rounded-xl p-3 border border-zinc-800/30">
-                {editingExerciseId === ex.id ? (
-                  <div className="space-y-3">
-                    <LabeledInput label="НАЗВАНИЕ" value={editingExercise.title} color="text-zinc-200" placeholder="Название" onChange={(v) => setEditingExercise({...editingExercise, title: v})} />
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <span className="text-[9px] text-zinc-500 font-bold block mb-1">ЕДИНИЦА</span>
-                        <select className="w-full bg-[#27272a] rounded-xl p-3 outline-none text-zinc-200" value={editingExercise.unit} onChange={(e) => setEditingExercise({...editingExercise, unit: e.target.value})}>
-                          <option value="reps">Повторы</option>
-                          <option value="sec">Секунды</option>
-                          <option value="steps">Шаги</option>
-                        </select>
-                      </div>
-
-                      <LabeledInput label="ЦЕЛЬ" value={editingExercise.target} color="text-amber-400" placeholder="30" onChange={(v) => setEditingExercise({...editingExercise, target: v})} />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <button onClick={saveEditExercise} type="button" className="fast-touch bg-emerald-600 rounded-xl p-3 font-bold">Сохранить</button>
-                      <button onClick={cancelEdit} type="button" className="fast-touch bg-[#27272a] rounded-xl p-3 font-bold">Отмена</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex justify-between items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium truncate block">{ex.title}</span>
-                      <div className="flex gap-2 text-[10px] font-bold uppercase mt-1 flex-wrap">
-                        <span className={colorClass(unitColor(ex.unit), "text")}>{getTarget(ex)} {unitLabel(ex.unit)}</span>
-                      </div>
-                    </div>
-
-                    <button onClick={() => startEditExercise(ex)} className="fast-touch text-zinc-600 active:text-amber-400 p-2 bg-transparent">
-                      <IconEdit className="w-5 h-5" />
-                    </button>
-
-                    <button onClick={() => deleteExercise(ex.id)} className="fast-touch text-zinc-800 active:text-red-500 p-2 bg-transparent">
-                      <IconTrash className="w-5 h-5" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
         </div>
       );
     }
