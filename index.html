@@ -103,7 +103,7 @@
     const today = todayKey();
 
     const defaultState = () => ({
-      appVersion: 17,
+      appVersion: 18,
       foods: [
         { id: "f1", name: "Куриное филе", calories: 113, protein: 23.6, fat: 1.9, carbs: 0 },
         { id: "f2", name: "Гречка варёная", calories: 132, protein: 4.5, fat: 1.3, carbs: 25 },
@@ -137,7 +137,7 @@
       return {
         ...fresh,
         ...s,
-        appVersion: 17,
+        appVersion: 18,
         foods: Array.isArray(s.foods) && s.foods.length ? s.foods : fresh.foods,
         foodLogsByDate: s.foodLogsByDate || {},
         goalsByDate: s.goalsByDate || fresh.goalsByDate,
@@ -678,7 +678,7 @@
       function exportBackup() {
         const backup = {
           ...state,
-          appVersion: 17,
+          appVersion: 18,
           exportedAt: new Date().toISOString(),
           currentDate
         };
@@ -757,11 +757,21 @@
                 <p className="text-[10px] text-zinc-500 font-bold uppercase mt-1">КБЖУ · дефицит · база</p>
               </div>
 
-              <div className="text-right">
-                <div className={`text-lg font-black ${remaining.calories < 0 ? "text-rose-400" : "text-emerald-400"}`}>
-                  {Math.round(remaining.calories)}
+              <div className="flex items-start gap-2">
+                <div className="text-right">
+                  <div className={`text-lg font-black ${remaining.calories < 0 ? "text-rose-400" : "text-emerald-400"}`}>
+                    {Math.round(remaining.calories)}
+                  </div>
+                  <div className="text-[9px] text-zinc-500 font-bold uppercase">ккал осталось</div>
                 </div>
-                <div className="text-[9px] text-zinc-500 font-bold uppercase">ккал осталось</div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowDaySettings(!showDaySettings)}
+                  className={`fast-touch w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${showDaySettings ? "bg-sky-600 text-white" : "bg-[#18181b] text-zinc-500 active:text-zinc-200"}`}
+                >
+                  <IconSettings className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
@@ -784,6 +794,15 @@
           <main ref={mainRef} className="flex-1 overflow-y-auto px-5 pt-4 pb-8">
             {activeTab === "home" && (
               <div className="space-y-6">
+                {showDaySettings && (
+                  <DaySettings
+                    goals={goals}
+                    measures={measures}
+                    updateGoalsForDate={updateGoalsForDate}
+                    updateMeasurement={updateMeasurement}
+                  />
+                )}
+
                 <div className="bg-[#18181b] rounded-3xl p-5 shadow-xl border border-zinc-800/50">
                   <div className="flex justify-between items-end mb-4">
                     <div>
@@ -910,6 +929,15 @@
 
             {activeTab === "food" && (
               <div className="space-y-6">
+                {showDaySettings && (
+                  <DaySettings
+                    goals={goals}
+                    measures={measures}
+                    updateGoalsForDate={updateGoalsForDate}
+                    updateMeasurement={updateMeasurement}
+                  />
+                )}
+
                 <form onSubmit={addFoodLog} className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
                   <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Добавить еду</h2>
 
@@ -1024,14 +1052,24 @@
                   ))}
                 </div>
 
-                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
-                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Дополнительно</h2>
-                  <div className="grid grid-cols-2 gap-3">
-                    <SectionButton icon={<IconBook className="w-5 h-5" />} label="База продуктов" color="indigo" onClick={() => setShowFoodBase(!showFoodBase)} />
-                    <SectionButton icon={<IconSettings className="w-5 h-5" />} label="Данные дня" color="zinc" onClick={() => setShowDaySettings(!showDaySettings)} />
-                  </div>
-                </div>
+                <FoodBase
+                  foods={state.foods}
+                  newFood={newFood}
+                  setNewFood={setNewFood}
+                  saveNewFood={saveNewFood}
+                  editingFoodId={editingFoodId}
+                  editingFood={editingFood}
+                  setEditingFood={setEditingFood}
+                  startEditFood={startEditFood}
+                  saveEditFood={saveEditFood}
+                  cancelEdit={() => { setEditingFoodId(null); setEditingFood(null); }}
+                  deleteFood={deleteFood}
+                />
+              </div>
+            )}
 
+            {activeTab === "training" && (
+              <div className="space-y-6">
                 {showDaySettings && (
                   <DaySettings
                     goals={goals}
@@ -1041,26 +1079,6 @@
                   />
                 )}
 
-                {showFoodBase && (
-                  <FoodBase
-                    foods={state.foods}
-                    newFood={newFood}
-                    setNewFood={setNewFood}
-                    saveNewFood={saveNewFood}
-                    editingFoodId={editingFoodId}
-                    editingFood={editingFood}
-                    setEditingFood={setEditingFood}
-                    startEditFood={startEditFood}
-                    saveEditFood={saveEditFood}
-                    cancelEdit={() => { setEditingFoodId(null); setEditingFood(null); }}
-                    deleteFood={deleteFood}
-                  />
-                )}
-              </div>
-            )}
-
-            {activeTab === "training" && (
-              <div className="space-y-6">
                 <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50">
                   <div className="flex justify-between items-end mb-4">
                     <div>
@@ -1136,41 +1154,23 @@
                   </p>
                 </div>
 
-                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
-                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Дополнительно</h2>
-                  <div className="grid grid-cols-2 gap-3">
-                    <SectionButton icon={<IconDumbbell className="w-5 h-5" />} label="Настроить план" color="amber" onClick={() => setShowTrainingBase(!showTrainingBase)} />
-                    <SectionButton icon={<IconSettings className="w-5 h-5" />} label="Данные дня" color="zinc" onClick={() => setShowDaySettings(!showDaySettings)} />
-                  </div>
-                </div>
-
-                {showDaySettings && (
-                  <DaySettings
-                    goals={goals}
-                    measures={measures}
-                    updateGoalsForDate={updateGoalsForDate}
-                    updateMeasurement={updateMeasurement}
-                  />
-                )}
-
-                {showTrainingBase && (
-                  <TrainingBase
-                    template={state.trainingTemplate}
-                    newExercise={newExercise}
-                    setNewExercise={setNewExercise}
-                    saveNewExercise={saveNewExercise}
-                    editingExerciseId={editingExerciseId}
-                    editingExercise={editingExercise}
-                    setEditingExercise={setEditingExercise}
-                    startEditExercise={startEditExercise}
-                    saveEditExercise={saveEditExercise}
-                    cancelEdit={() => { setEditingExerciseId(null); setEditingExercise(null); }}
-                    deleteExercise={deleteExercise}
-                    applyTemplateToCurrentDay={applyTemplateToCurrentDay}
-                  />
-                )}
+                <TrainingBase
+                  template={state.trainingTemplate}
+                  newExercise={newExercise}
+                  setNewExercise={setNewExercise}
+                  saveNewExercise={saveNewExercise}
+                  editingExerciseId={editingExerciseId}
+                  editingExercise={editingExercise}
+                  setEditingExercise={setEditingExercise}
+                  startEditExercise={startEditExercise}
+                  saveEditExercise={saveEditExercise}
+                  cancelEdit={() => { setEditingExerciseId(null); setEditingExercise(null); }}
+                  deleteExercise={deleteExercise}
+                  applyTemplateToCurrentDay={applyTemplateToCurrentDay}
+                />
               </div>
             )}
+
 
           </main>
 
