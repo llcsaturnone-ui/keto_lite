@@ -1,44 +1,816 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#020617" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="КБЖУ" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="styles.css" />
-  <title>КБЖУ + Тренировки</title>
+  <meta name="theme-color" content="#09090b" />
+  <title>КБЖУ Трекер</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    html, body, #root {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #000;
+      overflow: hidden;
+      overscroll-behavior-y: none;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+    }
+
+    ::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      background: transparent;
+    }
+
+    .safe-pt {
+      padding-top: max(32px, env(safe-area-inset-top));
+    }
+
+    .safe-pb {
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+
+    .fast-touch {
+      touch-action: manipulation;
+    }
+
+    .app-shell {
+      height: 100dvh;
+      min-height: 100dvh;
+    }
+
+    input, select, textarea {
+      font-size: 16px;
+    }
+
+    select {
+      background-image: none;
+    }
+  </style>
 </head>
+
 <body>
-  <header class="app-header">
-    <div class="container header-row">
-      <div>
-        <div class="eyebrow">КБЖУ + тренировки</div>
-        <h1 id="appTitle">Майский режим</h1>
-      </div>
-      <input id="dateInput" class="date-input" type="date" />
-    </div>
-  </header>
+  <div id="root"></div>
 
-  <main class="container main">
-    <section id="screenHome"></section>
-    <section id="screenAdd" class="hidden"></section>
-    <section id="screenProducts" class="hidden"></section>
-    <section id="screenSettings" class="hidden"></section>
-  </main>
+  <script type="text/babel">
+    const { useState, useMemo, useEffect } = React;
 
-  <nav class="bottom-nav">
-    <div class="container nav-grid">
-      <button class="nav-btn active" data-tab="home">Главная</button>
-      <button class="nav-btn" data-tab="add">Добавить</button>
-      <button class="nav-btn" data-tab="products">Продукты</button>
-      <button class="nav-btn" data-tab="settings">Настройки</button>
-    </div>
-  </nav>
+    const IconPlus = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14m-7-7h14"/></svg>;
+    const IconBook = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>;
+    const IconCalendar = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>;
+    const IconChevronLeft = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>;
+    const IconChevronRight = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>;
+    const IconTrash = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"/></svg>;
+    const IconTarget = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
+    const IconDumbbell = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>;
+    const IconFootprints = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 16v-2.38c0-.91.64-1.7 1.53-1.87l1.25-.24c.68-.13 1.35.25 1.59.9l.56 1.52A2.4 2.4 0 0 1 7.22 17L6 17.5A1.45 1.45 0 0 1 4 16Z"/><path d="M10 20.5v-2.38c0-.91.64-1.7 1.53-1.87l1.25-.24c.68-.13 1.35.25 1.59.9l.56 1.52A2.4 2.4 0 0 1 13.22 21L12 21.5a1.45 1.45 0 0 1-2-1Z"/><path d="M14 4.5v2.38c0 .91.64 1.7 1.53 1.87l1.25.24c.68.13 1.35-.25 1.59-.9l.56-1.52A2.4 2.4 0 0 0 17.22 3L16 2.5a1.45 1.45 0 0 0-2 2Z"/></svg>;
+    const IconScale = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>;
+    const IconDownload = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>;
 
-  <script src="app.js"></script>
+    const STORAGE = {
+      goals: "kbju_goals_v10",
+      foods: "kbju_foods_v10",
+      logs: "kbju_logs_v10",
+      habits: "kbju_habits_v10",
+      measures: "kbju_measures_v10"
+    };
+
+    const getLocalDateString = (dateObj) => {
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const day = String(dateObj.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    const displayDate = (dateString) => {
+      const [year, month, day] = dateString.split("-");
+      const d = new Date(year, month - 1, day);
+      const todayStr = getLocalDateString(new Date());
+
+      if (dateString === todayStr) return "Сегодня";
+
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (dateString === getLocalDateString(yesterday)) return "Вчера";
+
+      return d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    };
+
+    const num = (value) => {
+      const parsed = parseFloat(String(value ?? "").replace(",", "."));
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const round = (value, digits = 1) => {
+      const k = Math.pow(10, digits);
+      return Math.round(num(value) * k) / k;
+    };
+
+    const pct = (current, target) => {
+      if (!num(target)) return 0;
+      return Math.min(100, Math.max(0, (num(current) / num(target)) * 100));
+    };
+
+    const today = getLocalDateString(new Date());
+
+    const defaultGoals = {
+      calories: 2100,
+      protein: 160,
+      fat: 70,
+      carbs: 150,
+      steps: 7000
+    };
+
+    const defaultFoods = [
+      { id: "f1", name: "Куриное филе", calories: 113, protein: 23.6, fat: 1.9, carbs: 0 },
+      { id: "f2", name: "Гречка варёная", calories: 132, protein: 4.5, fat: 1.3, carbs: 25 },
+      { id: "f3", name: "Яйцо куриное", calories: 157, protein: 12.7, fat: 10.9, carbs: 0.7 },
+      { id: "f4", name: "Творог 5%", calories: 121, protein: 17, fat: 5, carbs: 1.8 },
+      { id: "f5", name: "Огурец", calories: 15, protein: 0.8, fat: 0.1, carbs: 2.8 },
+      { id: "f6", name: "ПП батончик", calories: 465, protein: 8.8, fat: 35.3, carbs: 11.8 }
+    ];
+
+    const defaultHabitsForDay = () => ([
+      {
+        id: "h_min",
+        title: "Минимум дня",
+        done: false,
+        items: ["Отжимания 5–10", "Приседания 10–15", "Вис/подтягивания 20 сек", "Планка 20–30 сек", "Пресс 10–15"]
+      },
+      {
+        id: "h_walk",
+        title: "Ходьба",
+        done: false,
+        items: ["Минимум 7000 шагов", "Лучше 8000–10000, если есть силы"]
+      },
+      {
+        id: "h_strength",
+        title: "Силовая база",
+        done: false,
+        items: ["3 круга", "Отжимания 8–12", "Приседания 15–20", "Негативные подтягивания 3–5", "Планка 30 сек", "Пресс 15"]
+      }
+    ]);
+
+    function ProgressBar({ value, color = "emerald" }) {
+      const colorClass = {
+        emerald: "bg-emerald-500",
+        indigo: "bg-indigo-500",
+        amber: "bg-amber-500",
+        sky: "bg-sky-500",
+        rose: "bg-rose-500"
+      }[color];
+
+      return (
+        <div className="h-2 w-full bg-zinc-950 rounded-full overflow-hidden">
+          <div className={`h-full ${colorClass} transition-all duration-500`} style={{ width: `${value}%` }} />
+        </div>
+      );
+    }
+
+    function MacroMini({ label, value, target, color, unit = "г" }) {
+      const left = num(target) - num(value);
+      const isOver = left < 0;
+
+      return (
+        <div className="bg-[#18181b] border border-zinc-800/50 rounded-2xl p-3">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-[9px] text-zinc-500 font-black uppercase">{label}</span>
+            <span className={`text-[10px] font-black ${isOver ? "text-rose-400" : "text-zinc-400"}`}>
+              {isOver ? "+" : ""}{round(Math.abs(left), 0)} {unit}
+            </span>
+          </div>
+          <div className={`font-black text-lg ${color}`}>
+            {round(value, unit === "ккал" ? 0 : 1)}
+            <span className="text-[10px] text-zinc-600 ml-1">/ {target}</span>
+          </div>
+          <div className="mt-2">
+            <ProgressBar value={pct(value, target)} color={isOver ? "rose" : color.includes("emerald") ? "emerald" : color.includes("indigo") ? "indigo" : color.includes("amber") ? "amber" : "sky"} />
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [goals, setGoals] = useState(() => JSON.parse(localStorage.getItem(STORAGE.goals)) || defaultGoals);
+      const [foods, setFoods] = useState(() => JSON.parse(localStorage.getItem(STORAGE.foods)) || defaultFoods);
+      const [dailyLogs, setDailyLogs] = useState(() => JSON.parse(localStorage.getItem(STORAGE.logs)) || {});
+      const [habitsByDate, setHabitsByDate] = useState(() => JSON.parse(localStorage.getItem(STORAGE.habits)) || {});
+      const [measuresByDate, setMeasuresByDate] = useState(() => JSON.parse(localStorage.getItem(STORAGE.measures)) || {});
+
+      const [currentDate, setCurrentDate] = useState(today);
+      const [activeTab, setActiveTab] = useState("diary");
+
+      const [selectedFoodId, setSelectedFoodId] = useState("");
+      const [gramsInput, setGramsInput] = useState("");
+      const [foodSearch, setFoodSearch] = useState("");
+
+      const [newFoodName, setNewFoodName] = useState("");
+      const [newFoodCals, setNewFoodCals] = useState("");
+      const [newFoodProtein, setNewFoodProtein] = useState("");
+      const [newFoodFat, setNewFoodFat] = useState("");
+      const [newFoodCarbs, setNewFoodCarbs] = useState("");
+
+      const [customTrainingTitle, setCustomTrainingTitle] = useState("");
+
+      useEffect(() => localStorage.setItem(STORAGE.goals, JSON.stringify(goals)), [goals]);
+      useEffect(() => localStorage.setItem(STORAGE.foods, JSON.stringify(foods)), [foods]);
+      useEffect(() => localStorage.setItem(STORAGE.logs, JSON.stringify(dailyLogs)), [dailyLogs]);
+      useEffect(() => localStorage.setItem(STORAGE.habits, JSON.stringify(habitsByDate)), [habitsByDate]);
+      useEffect(() => localStorage.setItem(STORAGE.measures, JSON.stringify(measuresByDate)), [measuresByDate]);
+
+      const currentDayLogs = dailyLogs[currentDate] || [];
+      const currentHabits = habitsByDate[currentDate] || defaultHabitsForDay();
+      const currentMeasures = measuresByDate[currentDate] || { steps: "", weight: "", waist: "", note: "" };
+
+      const totals = useMemo(() => {
+        return currentDayLogs.reduce((sum, log) => {
+          sum.calories += num(log.totalCalories);
+          sum.protein += num(log.totalProtein);
+          sum.fat += num(log.totalFat);
+          sum.carbs += num(log.totalCarbs);
+          return sum;
+        }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
+      }, [currentDayLogs]);
+
+      const remaining = {
+        calories: num(goals.calories) - totals.calories,
+        protein: num(goals.protein) - totals.protein,
+        fat: num(goals.fat) - totals.fat,
+        carbs: num(goals.carbs) - totals.carbs
+      };
+
+      const filteredFoods = useMemo(() => {
+        const q = foodSearch.trim().toLowerCase();
+        if (!q) return foods;
+        return foods.filter(f => f.name.toLowerCase().includes(q));
+      }, [foods, foodSearch]);
+
+      const selectedFood = foods.find(f => f.id === selectedFoodId);
+      const preview = selectedFood && gramsInput ? calcFood(selectedFood, gramsInput) : null;
+
+      function calcFood(food, gramsValue) {
+        const grams = num(gramsValue);
+        return {
+          calories: Math.round((grams / 100) * num(food.calories)),
+          protein: round((grams / 100) * num(food.protein), 1),
+          fat: round((grams / 100) * num(food.fat), 1),
+          carbs: round((grams / 100) * num(food.carbs), 1)
+        };
+      }
+
+      function handleAddLog(e) {
+        e.preventDefault();
+
+        const food = foods.find(f => f.id === selectedFoodId);
+        const grams = num(gramsInput);
+
+        if (!food || !grams) return;
+
+        const calculated = calcFood(food, grams);
+
+        const newLog = {
+          id: Date.now().toString(),
+          foodId: food.id,
+          foodName: food.name,
+          grams,
+          totalCalories: calculated.calories,
+          totalProtein: calculated.protein,
+          totalFat: calculated.fat,
+          totalCarbs: calculated.carbs
+        };
+
+        setDailyLogs(prev => ({
+          ...prev,
+          [currentDate]: [...(prev[currentDate] || []), newLog]
+        }));
+
+        setSelectedFoodId("");
+        setGramsInput("");
+      }
+
+      function deleteLog(logId) {
+        setDailyLogs(prev => ({
+          ...prev,
+          [currentDate]: (prev[currentDate] || []).filter(l => l.id !== logId)
+        }));
+      }
+
+      function addFood(e) {
+        e.preventDefault();
+
+        if (!newFoodName.trim()) return;
+
+        setFoods(prev => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            name: newFoodName.trim(),
+            calories: num(newFoodCals),
+            protein: num(newFoodProtein),
+            fat: num(newFoodFat),
+            carbs: num(newFoodCarbs)
+          }
+        ]);
+
+        setNewFoodName("");
+        setNewFoodCals("");
+        setNewFoodProtein("");
+        setNewFoodFat("");
+        setNewFoodCarbs("");
+      }
+
+      function deleteFood(foodId) {
+        setFoods(prev => prev.filter(x => x.id !== foodId));
+      }
+
+      function updateMeasure(key, value) {
+        setMeasuresByDate(prev => ({
+          ...prev,
+          [currentDate]: {
+            ...(prev[currentDate] || {}),
+            [key]: value
+          }
+        }));
+      }
+
+      function toggleHabit(id) {
+        setHabitsByDate(prev => {
+          const list = prev[currentDate] || defaultHabitsForDay();
+          return {
+            ...prev,
+            [currentDate]: list.map(h => h.id === id ? { ...h, done: !h.done } : h)
+          };
+        });
+      }
+
+      function addCustomTraining(e) {
+        e.preventDefault();
+
+        if (!customTrainingTitle.trim()) return;
+
+        setHabitsByDate(prev => {
+          const list = prev[currentDate] || defaultHabitsForDay();
+          return {
+            ...prev,
+            [currentDate]: [
+              ...list,
+              {
+                id: Date.now().toString(),
+                title: customTrainingTitle.trim(),
+                done: false,
+                items: ["Своя тренировка"]
+              }
+            ]
+          };
+        });
+
+        setCustomTrainingTitle("");
+      }
+
+      function deleteHabit(id) {
+        setHabitsByDate(prev => {
+          const list = prev[currentDate] || defaultHabitsForDay();
+          return {
+            ...prev,
+            [currentDate]: list.filter(h => h.id !== id)
+          };
+        });
+      }
+
+      function changeDate(offset) {
+        const d = new Date(currentDate);
+        d.setDate(d.getDate() + offset);
+        setCurrentDate(getLocalDateString(d));
+      }
+
+      function exportBackup() {
+        const data = {
+          goals,
+          foods,
+          dailyLogs,
+          habitsByDate,
+          measuresByDate,
+          exportedAt: new Date().toISOString()
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "kbju-tracker-backup.json";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function importBackup(e) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = () => {
+          try {
+            const data = JSON.parse(reader.result);
+            if (data.goals) setGoals(data.goals);
+            if (data.foods) setFoods(data.foods);
+            if (data.dailyLogs) setDailyLogs(data.dailyLogs);
+            if (data.habitsByDate) setHabitsByDate(data.habitsByDate);
+            if (data.measuresByDate) setMeasuresByDate(data.measuresByDate);
+            alert("Backup восстановлен");
+          } catch {
+            alert("Не получилось прочитать backup");
+          }
+        };
+
+        reader.readAsText(file);
+      }
+
+      const completedHabits = currentHabits.filter(h => h.done).length;
+
+      return (
+        <div className="app-shell flex flex-col w-full max-w-md mx-auto bg-[#09090b] text-zinc-100 font-sans shadow-2xl border-x border-zinc-900">
+          <header className="shrink-0 safe-pt px-6 pb-4 bg-[#09090b] border-b border-zinc-800">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-lg font-bold">
+                  {activeTab === "diary" && "Дневник"}
+                  {activeTab === "training" && "Тренировки"}
+                  {activeTab === "directory" && "База"}
+                  {activeTab === "settings" && "Настройки"}
+                </h1>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase mt-1">Майский режим</p>
+              </div>
+
+              <div className="text-right">
+                <div className={`text-lg font-black ${remaining.calories < 0 ? "text-rose-400" : "text-emerald-400"}`}>
+                  {Math.round(remaining.calories)}
+                </div>
+                <div className="text-[9px] text-zinc-500 font-bold uppercase">ккал осталось</div>
+              </div>
+            </div>
+          </header>
+
+          <main className="flex-1 overflow-y-auto px-5 pt-4 pb-8">
+            {activeTab === "diary" && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between bg-[#18181b] rounded-2xl p-1 border border-zinc-800/50">
+                  <button onClick={() => changeDate(-1)} className="fast-touch p-3 text-zinc-400 active:text-zinc-200">
+                    <IconChevronLeft className="w-5 h-5" />
+                  </button>
+                  <div className="font-bold text-sm text-zinc-200">{displayDate(currentDate)}</div>
+                  <button onClick={() => changeDate(1)} disabled={currentDate === today} className="fast-touch p-3 text-zinc-400 disabled:opacity-20 active:text-zinc-200">
+                    <IconChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="bg-[#18181b] rounded-3xl p-5 shadow-xl border border-zinc-800/50">
+                  <div className="flex justify-between items-end mb-4">
+                    <div>
+                      <p className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Калории</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl font-black">{Math.round(totals.calories)}</span>
+                        <span className="text-zinc-600 text-xs">/ {goals.calories}</span>
+                      </div>
+                    </div>
+
+                    <div className={`text-right font-black ${remaining.calories < 0 ? "text-rose-400" : "text-emerald-400"}`}>
+                      <span className="text-2xl">{Math.round(Math.abs(remaining.calories))}</span>
+                      <span className="text-[10px] ml-1 uppercase">{remaining.calories < 0 ? "перебор" : "осталось"}</span>
+                    </div>
+                  </div>
+
+                  <ProgressBar value={pct(totals.calories, goals.calories)} color={remaining.calories < 0 ? "rose" : "emerald"} />
+
+                  <div className="grid grid-cols-3 gap-3 mt-5">
+                    <MacroMini label="Белок" value={totals.protein} target={goals.protein} color="text-indigo-400" />
+                    <MacroMini label="Жиры" value={totals.fat} target={goals.fat} color="text-amber-400" />
+                    <MacroMini label="Углев." value={totals.carbs} target={goals.carbs} color="text-sky-400" />
+                  </div>
+                </div>
+
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                      <IconFootprints className="w-4 h-4" /> Шаги и замеры
+                    </h2>
+                    <span className="text-[10px] font-bold text-emerald-400">{completedHabits}/{currentHabits.length} задач</span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <span className="text-[9px] text-zinc-500 font-bold block mb-1">ШАГИ</span>
+                      <input type="number" inputMode="numeric" className="w-full bg-[#27272a] rounded-xl p-3 text-emerald-400 font-bold outline-none min-w-0" value={currentMeasures.steps || ""} onChange={(e) => updateMeasure("steps", e.target.value)} placeholder="0" />
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-zinc-500 font-bold block mb-1">ВЕС</span>
+                      <input type="number" inputMode="decimal" className="w-full bg-[#27272a] rounded-xl p-3 text-sky-400 font-bold outline-none min-w-0" value={currentMeasures.weight || ""} onChange={(e) => updateMeasure("weight", e.target.value)} placeholder="кг" />
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-zinc-500 font-bold block mb-1">ТАЛИЯ</span>
+                      <input type="number" inputMode="decimal" className="w-full bg-[#27272a] rounded-xl p-3 text-amber-400 font-bold outline-none min-w-0" value={currentMeasures.waist || ""} onChange={(e) => updateMeasure("waist", e.target.value)} placeholder="см" />
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <ProgressBar value={pct(currentMeasures.steps, goals.steps)} color="emerald" />
+                    <div className="flex justify-between mt-2 text-[10px] font-bold uppercase">
+                      <span className="text-zinc-500">шаги</span>
+                      <span className="text-emerald-400">{num(currentMeasures.steps)} / {goals.steps}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <form onSubmit={handleAddLog} className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Добавить еду</h2>
+
+                  <input type="text" placeholder="Поиск продукта" className="w-full bg-[#27272a] rounded-2xl p-4 outline-none min-w-0 text-zinc-200" value={foodSearch} onChange={(e) => setFoodSearch(e.target.value)} />
+
+                  <select className="w-full bg-[#27272a] rounded-2xl p-4 outline-none appearance-none text-zinc-200" value={selectedFoodId} onChange={(e) => setSelectedFoodId(e.target.value)} required>
+                    <option value="" disabled className="text-zinc-500">Что съели?</option>
+                    {filteredFoods.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                  </select>
+
+                  <div className="flex gap-3">
+                    <input type="number" inputMode="decimal" placeholder="Граммы" className="flex-1 bg-[#27272a] rounded-2xl p-4 outline-none min-w-0 text-zinc-200" value={gramsInput} onChange={(e) => setGramsInput(e.target.value)} required />
+                    <button type="submit" className="w-14 shrink-0 bg-emerald-600 rounded-2xl flex items-center justify-center fast-touch active:scale-95 transition-transform">
+                      <IconPlus className="w-6 h-6 text-white" />
+                    </button>
+                  </div>
+
+                  {preview && (
+                    <div className="grid grid-cols-4 gap-2 pt-1">
+                      <div className="text-center bg-zinc-900 rounded-xl p-2">
+                        <div className="text-emerald-400 font-black text-sm">{preview.calories}</div>
+                        <div className="text-[8px] text-zinc-500 font-bold uppercase">ккал</div>
+                      </div>
+                      <div className="text-center bg-zinc-900 rounded-xl p-2">
+                        <div className="text-indigo-400 font-black text-sm">{preview.protein}</div>
+                        <div className="text-[8px] text-zinc-500 font-bold uppercase">б</div>
+                      </div>
+                      <div className="text-center bg-zinc-900 rounded-xl p-2">
+                        <div className="text-amber-400 font-black text-sm">{preview.fat}</div>
+                        <div className="text-[8px] text-zinc-500 font-bold uppercase">ж</div>
+                      </div>
+                      <div className="text-center bg-zinc-900 rounded-xl p-2">
+                        <div className="text-sky-400 font-black text-sm">{preview.carbs}</div>
+                        <div className="text-[8px] text-zinc-500 font-bold uppercase">у</div>
+                      </div>
+                    </div>
+                  )}
+                </form>
+
+                <div className="space-y-3">
+                  {currentDayLogs.length === 0 && (
+                    <div className="bg-[#18181b] rounded-2xl p-5 text-center text-zinc-500 text-sm border border-zinc-800/30">
+                      Пока нет еды за этот день
+                    </div>
+                  )}
+
+                  {currentDayLogs.map(log => (
+                    <div key={log.id} className="bg-[#18181b] rounded-2xl p-4 flex justify-between items-center border border-zinc-800/30">
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm truncate">{log.foodName || foods.find(f => f.id === log.foodId)?.name || "Удалено"}</p>
+                        <p className="text-[10px] text-zinc-500 font-bold uppercase">{log.grams} г</p>
+                      </div>
+
+                      <div className="flex items-center gap-4 text-right">
+                        <div>
+                          <div className="text-emerald-400 font-bold text-sm">{log.totalCalories}</div>
+                          <div className="text-[9px] font-bold">
+                            <span className="text-indigo-400">Б {log.totalProtein}</span>
+                            <span className="text-amber-400 ml-1">Ж {log.totalFat}</span>
+                            <span className="text-sky-400 ml-1">У {log.totalCarbs}</span>
+                          </div>
+                        </div>
+                        <button onClick={() => deleteLog(log.id)} className="fast-touch text-zinc-700 active:text-red-400 p-1">
+                          <IconTrash className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <textarea className="w-full bg-[#18181b] border border-zinc-800/50 rounded-3xl p-4 outline-none min-h-[90px] text-sm text-zinc-200" placeholder="Заметка дня: сон, тяга к сладкому, самочувствие..." value={currentMeasures.note || ""} onChange={(e) => updateMeasure("note", e.target.value)} />
+              </div>
+            )}
+
+            {activeTab === "training" && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between bg-[#18181b] rounded-2xl p-1 border border-zinc-800/50">
+                  <button onClick={() => changeDate(-1)} className="fast-touch p-3 text-zinc-400 active:text-zinc-200">
+                    <IconChevronLeft className="w-5 h-5" />
+                  </button>
+                  <div className="font-bold text-sm text-zinc-200">{displayDate(currentDate)}</div>
+                  <button onClick={() => changeDate(1)} disabled={currentDate === today} className="fast-touch p-3 text-zinc-400 disabled:opacity-20 active:text-zinc-200">
+                    <IconChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2 mb-4">
+                    <IconDumbbell className="w-4 h-4" /> План на день
+                  </h2>
+
+                  <div className="space-y-3">
+                    {currentHabits.map(habit => (
+                      <div key={habit.id} className={`rounded-2xl p-4 border ${habit.done ? "bg-emerald-500/10 border-emerald-500/30" : "bg-[#27272a] border-zinc-700/40"}`}>
+                        <div className="flex gap-3">
+                          <input type="checkbox" checked={habit.done} onChange={() => toggleHabit(habit.id)} className="mt-1 w-5 h-5 accent-emerald-500" />
+                          <div className="flex-1">
+                            <div className="flex justify-between gap-2">
+                              <p className={`font-black text-sm ${habit.done ? "text-emerald-400" : "text-zinc-100"}`}>{habit.title}</p>
+                              {!["h_min","h_walk","h_strength"].includes(habit.id) && (
+                                <button onClick={() => deleteHabit(habit.id)} className="text-zinc-600 active:text-rose-400 p-0 bg-transparent">
+                                  <IconTrash className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                            <ul className="mt-2 space-y-1">
+                              {habit.items.map((item, idx) => (
+                                <li key={idx} className="text-xs text-zinc-400">• {item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <form onSubmit={addCustomTraining} className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Своя задача</h2>
+                  <div className="flex gap-3">
+                    <input type="text" placeholder="Например: растяжка 10 мин" className="flex-1 bg-[#27272a] rounded-2xl p-4 outline-none min-w-0 text-zinc-200" value={customTrainingTitle} onChange={(e) => setCustomTrainingTitle(e.target.value)} />
+                    <button type="submit" className="w-14 shrink-0 bg-indigo-600 rounded-2xl flex items-center justify-center fast-touch active:scale-95 transition-transform">
+                      <IconPlus className="w-6 h-6 text-white" />
+                    </button>
+                  </div>
+                </form>
+
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Правило мая</h2>
+                  <p className="text-sm text-zinc-300 leading-relaxed">
+                    Не убиваться каждый день. Минимум дня нужен, чтобы не сорваться. Силовую базу делай 3 раза в неделю. После тренировки должно быть ощущение: «мог бы ещё немного».
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "directory" && (
+              <div className="space-y-8">
+                <form onSubmit={addFood} className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-4">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Новый продукт на 100 г</h2>
+
+                  <input type="text" placeholder="Название" className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-zinc-200" value={newFoodName} onChange={(e) => setNewFoodName(e.target.value)} required />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="number" inputMode="decimal" placeholder="Ккал" className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-emerald-400 font-bold" value={newFoodCals} onChange={(e) => setNewFoodCals(e.target.value)} required />
+                    <input type="number" inputMode="decimal" placeholder="Белок" className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-indigo-400 font-bold" value={newFoodProtein} onChange={(e) => setNewFoodProtein(e.target.value)} required />
+                    <input type="number" inputMode="decimal" placeholder="Жиры" className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-amber-400 font-bold" value={newFoodFat} onChange={(e) => setNewFoodFat(e.target.value)} required />
+                    <input type="number" inputMode="decimal" placeholder="Углеводы" className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-sky-400 font-bold" value={newFoodCarbs} onChange={(e) => setNewFoodCarbs(e.target.value)} required />
+                  </div>
+
+                  <button type="submit" className="fast-touch w-full bg-indigo-600 active:bg-indigo-700 text-white rounded-xl p-4 font-bold transition-transform active:scale-95">
+                    Добавить в список
+                  </button>
+                </form>
+
+                <div className="space-y-2">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase mb-2">Список продуктов ({foods.length})</h2>
+                  {foods.map(f => (
+                    <div key={f.id} className="bg-[#18181b] rounded-xl p-3 flex justify-between items-center border border-zinc-800/30">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium truncate block">{f.name}</span>
+                        <div className="flex gap-2 text-[10px] font-bold uppercase mt-1 flex-wrap">
+                          <span className="text-emerald-500">{f.calories} ккал</span>
+                          <span className="text-indigo-500">Б {f.protein || 0}</span>
+                          <span className="text-amber-500">Ж {f.fat || 0}</span>
+                          <span className="text-sky-500">У {f.carbs || 0}</span>
+                        </div>
+                      </div>
+                      <button onClick={() => deleteFood(f.id)} className="fast-touch text-zinc-800 active:text-red-500 p-2 bg-transparent">
+                        <IconTrash className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === "settings" && (
+              <div className="space-y-8">
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <IconTarget className="w-4 h-4" /> Дневная норма
+                  </h2>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <span className="text-[9px] text-zinc-500 font-bold block mb-1">ККАЛ</span>
+                      <input type="number" className="w-full bg-[#27272a] rounded-xl p-3 text-emerald-400 font-bold outline-none min-w-0" value={goals.calories} onChange={(e) => setGoals({...goals, calories: e.target.value})} />
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-zinc-500 font-bold block mb-1">БЕЛОК</span>
+                      <input type="number" className="w-full bg-[#27272a] rounded-xl p-3 text-indigo-400 font-bold outline-none min-w-0" value={goals.protein} onChange={(e) => setGoals({...goals, protein: e.target.value})} />
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-zinc-500 font-bold block mb-1">ЖИРЫ</span>
+                      <input type="number" className="w-full bg-[#27272a] rounded-xl p-3 text-amber-400 font-bold outline-none min-w-0" value={goals.fat} onChange={(e) => setGoals({...goals, fat: e.target.value})} />
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-zinc-500 font-bold block mb-1">УГЛЕВОДЫ</span>
+                      <input type="number" className="w-full bg-[#27272a] rounded-xl p-3 text-sky-400 font-bold outline-none min-w-0" value={goals.carbs} onChange={(e) => setGoals({...goals, carbs: e.target.value})} />
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-[9px] text-zinc-500 font-bold block mb-1">ШАГИ</span>
+                      <input type="number" className="w-full bg-[#27272a] rounded-xl p-3 text-emerald-400 font-bold outline-none min-w-0" value={goals.steps} onChange={(e) => setGoals({...goals, steps: e.target.value})} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                    <IconDownload className="w-4 h-4" /> Резервная копия
+                  </h2>
+
+                  <button onClick={exportBackup} className="fast-touch w-full bg-emerald-600 active:bg-emerald-700 text-white rounded-xl p-4 font-bold transition-transform active:scale-95">
+                    Скачать backup
+                  </button>
+
+                  <label className="block fast-touch w-full bg-[#27272a] active:bg-zinc-700 text-white rounded-xl p-4 font-bold text-center transition-transform active:scale-95">
+                    Загрузить backup
+                    <input type="file" accept="application/json" className="hidden" onChange={importBackup} />
+                  </label>
+
+                  <p className="text-xs text-zinc-500 leading-relaxed">
+                    Данные хранятся в памяти браузера на телефоне. Перед сменой телефона или очисткой Safari скачай backup.
+                  </p>
+                </div>
+
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <IconScale className="w-4 h-4" /> Стартовые данные
+                  </h2>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="bg-[#27272a] rounded-xl p-3">
+                      <div className="text-zinc-500 text-[9px] font-bold uppercase">Вес</div>
+                      <div className="font-black text-sky-400">96.5 кг</div>
+                    </div>
+                    <div className="bg-[#27272a] rounded-xl p-3">
+                      <div className="text-zinc-500 text-[9px] font-bold uppercase">Цель 1</div>
+                      <div className="font-black text-emerald-400">92 кг</div>
+                    </div>
+                    <div className="bg-[#27272a] rounded-xl p-3">
+                      <div className="text-zinc-500 text-[9px] font-bold uppercase">Калории</div>
+                      <div className="font-black text-emerald-400">2000–2100</div>
+                    </div>
+                    <div className="bg-[#27272a] rounded-xl p-3">
+                      <div className="text-zinc-500 text-[9px] font-bold uppercase">Белок</div>
+                      <div className="font-black text-indigo-400">150–170 г</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </main>
+
+          <nav className="shrink-0 bg-[#18181b] border-t border-zinc-800 grid grid-cols-4 pt-2 safe-pb relative z-40">
+            <button onClick={() => setActiveTab("diary")} className={`fast-touch flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "diary" ? "text-emerald-400" : "text-zinc-600 active:text-zinc-400"}`}>
+              <IconCalendar className="w-6 h-6" />
+              <span className="text-[9px] font-bold mt-1 uppercase">Дневник</span>
+            </button>
+
+            <button onClick={() => setActiveTab("training")} className={`fast-touch flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "training" ? "text-amber-400" : "text-zinc-600 active:text-zinc-400"}`}>
+              <IconDumbbell className="w-6 h-6" />
+              <span className="text-[9px] font-bold mt-1 uppercase">Трен</span>
+            </button>
+
+            <button onClick={() => setActiveTab("directory")} className={`fast-touch flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "directory" ? "text-indigo-400" : "text-zinc-600 active:text-zinc-400"}`}>
+              <IconBook className="w-6 h-6" />
+              <span className="text-[9px] font-bold mt-1 uppercase">База</span>
+            </button>
+
+            <button onClick={() => setActiveTab("settings")} className={`fast-touch flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "settings" ? "text-sky-400" : "text-zinc-600 active:text-zinc-400"}`}>
+              <IconTarget className="w-6 h-6" />
+              <span className="text-[9px] font-bold mt-1 uppercase">Цели</span>
+            </button>
+          </nav>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
 </body>
 </html>
