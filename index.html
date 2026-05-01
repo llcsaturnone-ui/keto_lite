@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#09090b">
-  <title>Трекер питания</title>
+  <title>Трекер питания и ритма</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -48,11 +48,19 @@
     const IconTarget = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
     const IconEdit = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>;
     const IconDownload = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>;
+    const IconActivity = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>;
+    const IconFootprints = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 16v-2.4C4 11.6 5.6 10 7.6 10H8c1.1 0 2 .9 2 2v4c0 1.7-1.3 3-3 3s-3-1.3-3-3Z"/><path d="M14 8V5.6C14 3.6 15.6 2 17.6 2H18c1.1 0 2 .9 2 2v4c0 1.7-1.3 3-3 3s-3-1.3-3-3Z"/><path d="M8 10V7"/><path d="M18 2v3"/></svg>;
+    const IconDumbbell = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>;
+    const IconCheckCircle = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>;
+    const IconMoon = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 7 9 9 0 1 1-9-7Z"/></svg>;
+    const IconFlame = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17c1.4 0 2.8-1 2.8-2.7 0-1.5-1-2.3-2.1-3.2C10.4 10 9 8.8 9 6.5 9 4.8 10 3.5 11.1 2.7c.3 2.1 1.7 3.4 3 4.7 1.8 1.8 3.4 3.4 3.4 6.1A6.5 6.5 0 1 1 5.7 9.8c0 1.8.8 3.1 2.8 4.7Z"/></svg>;
+    const IconDatabase = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>;
 
     const STORAGE = {
       goals: "diet_goals_v2",
       foods: "diet_foods_v2",
-      logs: "diet_logs_v2"
+      logs: "diet_logs_v2",
+      wellness: "diet_wellness_v1"
     };
 
     const getLocalDateString = (dateObj) => {
@@ -89,6 +97,8 @@
       return Number.isFinite(parsed) ? parsed : 0;
     };
 
+    const nonNegative = (value) => Math.max(0, num(value));
+
     const round = (value, digits = 1) => {
       const k = Math.pow(10, digits);
       return Math.round(num(value) * k) / k;
@@ -118,6 +128,53 @@
       { id: "5", name: "Огурец", calories: 15, protein: 0.8, fat: 0.1, carbs: 2.8 }
     ];
 
+    const defaultHabits = [
+      { id: "water", name: "Вода" },
+      { id: "sleep", name: "Сон 7+ ч" },
+      { id: "stretch", name: "Растяжка" }
+    ];
+
+    const prayerList = [
+      { id: "fajr", label: "Фаджр" },
+      { id: "dhuhr", label: "Зухр" },
+      { id: "asr", label: "Аср" },
+      { id: "maghrib", label: "Магриб" },
+      { id: "isha", label: "Иша" }
+    ];
+
+    const workoutList = [
+      { id: "pushups", label: "Отжимания", unit: "раз" },
+      { id: "squats", label: "Приседания", unit: "раз" },
+      { id: "pullups", label: "Подтягивания", unit: "раз" },
+      { id: "plank", label: "Планка", unit: "сек" },
+      { id: "abs", label: "Пресс", unit: "раз" }
+    ];
+
+    const defaultWellness = {
+      stepGoal: 10000,
+      habits: defaultHabits,
+      days: {}
+    };
+
+    const emptyPrayers = () => prayerList.reduce((acc, prayer) => {
+      acc[prayer.id] = { prayer: false, dhikr: false };
+      return acc;
+    }, {});
+
+    const emptyWorkouts = () => workoutList.reduce((acc, exercise) => {
+      acc[exercise.id] = 0;
+      return acc;
+    }, {});
+
+    function makeEmptyWellnessDay() {
+      return {
+        steps: 0,
+        habits: {},
+        prayers: emptyPrayers(),
+        workouts: emptyWorkouts()
+      };
+    }
+
 
     function normalizeFood(food) {
       if (!food || typeof food !== "object") return null;
@@ -130,19 +187,19 @@
       return {
         id,
         name,
-        calories: num(food.calories ?? food.kcal ?? food["ккал"] ?? food["калории"] ?? food["калорийность"]),
-        protein: num(food.protein ?? food.proteins ?? food["белки"] ?? food["белок"] ?? food["б"]),
-        fat: num(food.fat ?? food.fats ?? food["жиры"] ?? food["жир"] ?? food["ж"]),
-        carbs: num(food.carbs ?? food.carbohydrates ?? food["углеводы"] ?? food["углевод"] ?? food["у"])
+        calories: nonNegative(food.calories ?? food.kcal ?? food["ккал"] ?? food["калории"] ?? food["калорийность"]),
+        protein: nonNegative(food.protein ?? food.proteins ?? food["белки"] ?? food["белок"] ?? food["б"]),
+        fat: nonNegative(food.fat ?? food.fats ?? food["жиры"] ?? food["жир"] ?? food["ж"]),
+        carbs: nonNegative(food.carbs ?? food.carbohydrates ?? food["углеводы"] ?? food["углевод"] ?? food["у"])
       };
     }
 
     function normalizeGoals(value) {
       return {
-        calories: num(value?.calories || defaultGoals.calories),
-        protein: num(value?.protein || defaultGoals.protein),
-        fat: num(value?.fat || defaultGoals.fat),
-        carbs: num(value?.carbs || defaultGoals.carbs)
+        calories: nonNegative(value?.calories ?? defaultGoals.calories),
+        protein: nonNegative(value?.protein ?? defaultGoals.protein),
+        fat: nonNegative(value?.fat ?? defaultGoals.fat),
+        carbs: nonNegative(value?.carbs ?? defaultGoals.carbs)
       };
     }
 
@@ -166,6 +223,112 @@
 
     function normalizeLogs(value) {
       return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    }
+
+    function normalizeHabit(habit) {
+      if (!habit || typeof habit !== "object") return null;
+
+      const name = String(habit.name || habit.title || "").trim();
+      if (!name) return null;
+
+      return {
+        id: String(habit.id || makeId()),
+        name
+      };
+    }
+
+    function normalizePrayers(value) {
+      const prayers = emptyPrayers();
+
+      if (!value || typeof value !== "object" || Array.isArray(value)) return prayers;
+
+      prayerList.forEach(prayer => {
+        const raw = value[prayer.id];
+
+        if (typeof raw === "boolean") {
+          prayers[prayer.id] = { prayer: raw, dhikr: false };
+          return;
+        }
+
+        if (raw && typeof raw === "object") {
+          prayers[prayer.id] = {
+            prayer: Boolean(raw.prayer ?? raw.done ?? raw.namaz),
+            dhikr: Boolean(raw.dhikr ?? raw.zikr ?? raw.suohazh)
+          };
+        }
+      });
+
+      return prayers;
+    }
+
+    function normalizeWorkouts(value) {
+      const workouts = emptyWorkouts();
+
+      if (Array.isArray(value)) {
+        value.forEach(workout => {
+          const name = String(workout?.name || workout?.type || "").toLowerCase();
+          const rawValue = nonNegative(workout?.count ?? workout?.reps ?? workout?.value ?? workout?.seconds ?? workout?.minutes);
+
+          if (name.includes("отжим")) workouts.pushups += Math.round(rawValue);
+          if (name.includes("присед")) workouts.squats += Math.round(rawValue);
+          if (name.includes("подтяг")) workouts.pullups += Math.round(rawValue);
+          if (name.includes("план")) workouts.plank += Math.round(nonNegative(workout?.seconds ?? num(workout?.minutes) * 60));
+          if (name.includes("пресс")) workouts.abs += Math.round(rawValue);
+        });
+
+        return workouts;
+      }
+
+      if (!value || typeof value !== "object") return workouts;
+
+      workoutList.forEach(exercise => {
+        workouts[exercise.id] = Math.round(nonNegative(value[exercise.id]));
+      });
+
+      return workouts;
+    }
+
+    function normalizeWellnessDay(value) {
+      const empty = makeEmptyWellnessDay();
+      if (!value || typeof value !== "object" || Array.isArray(value)) return empty;
+
+      const habits = {};
+      if (value.habits && typeof value.habits === "object" && !Array.isArray(value.habits)) {
+        Object.entries(value.habits).forEach(([id, done]) => {
+          habits[String(id)] = Boolean(done);
+        });
+      }
+
+      return {
+        steps: Math.round(nonNegative(value.steps)),
+        habits,
+        prayers: normalizePrayers(value.prayers),
+        workouts: normalizeWorkouts(value.workouts)
+      };
+    }
+
+    function normalizeWellness(value) {
+      const usedIds = new Set();
+      const habitsSource = Array.isArray(value?.habits) ? value.habits : defaultHabits;
+      const habits = habitsSource.map(normalizeHabit).filter(Boolean).map(habit => {
+        let id = habit.id;
+        if (usedIds.has(id)) id = makeId();
+        usedIds.add(id);
+        return { ...habit, id };
+      });
+
+      const days = {};
+      if (value?.days && typeof value.days === "object" && !Array.isArray(value.days)) {
+        Object.entries(value.days).forEach(([date, day]) => {
+          if (/^\d{4}-\d{2}-\d{2}$/.test(date)) days[date] = normalizeWellnessDay(day);
+        });
+      }
+
+      return {
+        stepGoal: value?.stepGoal === undefined || value?.stepGoal === null || value?.stepGoal === "" ? defaultWellness.stepGoal : Math.round(nonNegative(value.stepGoal)),
+        habits: habits.length ? habits : defaultHabits,
+        days
+      };
     }
 
     function safeLoad(key, fallback, normalizer = (v) => v) {
@@ -237,6 +400,34 @@
       );
     }
 
+    function StatCard({ icon, label, value, sub, color = "emerald", progress = null }) {
+      const colorClass = {
+        emerald: "text-emerald-400",
+        indigo: "text-indigo-400",
+        amber: "text-amber-400",
+        sky: "text-sky-400",
+        rose: "text-rose-400"
+      }[color];
+
+      return (
+        <div className="bg-[#18181b] rounded-2xl p-4 border border-zinc-800/50">
+          <div className="flex items-center justify-between mb-3">
+            <div className={colorClass}>{icon}</div>
+            <span className={`text-[10px] font-black ${colorClass}`}>{label}</span>
+          </div>
+
+          <div className="text-2xl font-black leading-none">{value}</div>
+          <div className="text-[9px] text-zinc-500 font-bold uppercase mt-2 truncate">{sub}</div>
+
+          {progress !== null && (
+            <div className="mt-3">
+              <ProgressBar value={progress} color={color} />
+            </div>
+          )}
+        </div>
+      );
+    }
+
     function InputBox({ label, value, setValue, color, placeholder = "", type = "number" }) {
       return (
         <div>
@@ -244,6 +435,7 @@
           <input
             type={type}
             inputMode={type === "number" ? "decimal" : "text"}
+            min={type === "number" ? "0" : undefined}
             className={`w-full bg-[#27272a] rounded-xl p-3 ${color} font-bold outline-none min-w-0`}
             value={value}
             onChange={(e) => setValue(e.target.value)}
@@ -485,6 +677,7 @@
       const [goals, setGoals] = useState(() => safeLoad(STORAGE.goals, defaultGoals, normalizeGoals));
       const [foods, setFoods] = useState(() => safeLoad(STORAGE.foods, defaultFoods, normalizeFoods));
       const [dailyLogs, setDailyLogs] = useState(() => safeLoad(STORAGE.logs, {}, normalizeLogs));
+      const [wellness, setWellness] = useState(() => safeLoad(STORAGE.wellness, defaultWellness, normalizeWellness));
       const [currentDate, setCurrentDate] = useState(today);
       const [activeTab, setActiveTab] = useState("diary");
 
@@ -498,16 +691,19 @@
 
       const [editingLogId, setEditingLogId] = useState(null);
       const [editingLog, setEditingLog] = useState({ foodId: "", grams: "" });
+      const [newHabitName, setNewHabitName] = useState("");
 
       useEffect(() => safeSave(STORAGE.goals, goals), [goals]);
       useEffect(() => safeSave(STORAGE.foods, foods), [foods]);
       useEffect(() => safeSave(STORAGE.logs, dailyLogs), [dailyLogs]);
+      useEffect(() => safeSave(STORAGE.wellness, wellness), [wellness]);
 
       useEffect(() => {
         if (mainRef.current) mainRef.current.scrollTop = 0;
       }, [activeTab, currentDate]);
 
       const currentDayLogs = dailyLogs[currentDate] || [];
+      const currentWellnessDay = useMemo(() => normalizeWellnessDay(wellness.days?.[currentDate]), [wellness.days, currentDate]);
 
       const totals = useMemo(() => {
         return currentDayLogs.reduce((sum, log) => {
@@ -520,9 +716,20 @@
       }, [currentDayLogs]);
 
       const remainingCalories = num(goals.calories) - totals.calories;
+      const habitDoneCount = wellness.habits.filter(habit => currentWellnessDay.habits[habit.id]).length;
+      const prayerDoneCount = prayerList.filter(prayer => currentWellnessDay.prayers[prayer.id]?.prayer).length;
+      const dhikrDoneCount = prayerList.filter(prayer => currentWellnessDay.prayers[prayer.id]?.dhikr).length;
+      const workoutDoneCount = workoutList.filter(exercise => num(currentWellnessDay.workouts[exercise.id]) > 0).length;
+      const stepProgress = pct(currentWellnessDay.steps, wellness.stepGoal);
+      const activeTitle = activeTab === "diary" ? "Дневник" : activeTab === "wellness" ? "Ритм дня" : "База и цели";
+      const loggedFoodDaysCount = Object.values(dailyLogs).filter(day => Array.isArray(day) && day.length > 0).length;
+      const rhythmDaysCount = Object.keys(wellness.days || {}).length;
+      const headerValue = activeTab === "wellness" ? `${Math.round(stepProgress)}%` : activeTab === "directory" ? foods.length : Math.round(remainingCalories);
+      const headerLabel = activeTab === "wellness" ? "цель шагов" : activeTab === "directory" ? "продуктов" : "ккал осталось";
+      const headerColor = activeTab === "wellness" ? "text-sky-400" : activeTab === "directory" ? "text-indigo-400" : (remainingCalories < 0 ? "text-rose-400" : "text-emerald-400");
 
       function calcFood(food, gramsValue) {
-        const grams = num(gramsValue);
+        const grams = nonNegative(gramsValue);
         return {
           calories: Math.round((grams / 100) * num(food.calories)),
           protein: round((grams / 100) * num(food.protein), 1),
@@ -557,9 +764,9 @@
         e.preventDefault();
 
         const food = foods.find(f => f.id === selectedFoodId);
-        const grams = num(gramsInput);
+        const grams = nonNegative(gramsInput);
 
-        if (!food || !grams) return;
+        if (!food || grams <= 0) return;
 
         const calculated = calcFood(food, grams);
 
@@ -600,9 +807,9 @@
 
       function saveEditLog() {
         const food = foods.find(f => f.id === editingLog.foodId);
-        const grams = num(editingLog.grams);
+        const grams = nonNegative(editingLog.grams);
 
-        if (!food || !grams) return;
+        if (!food || grams <= 0) return;
 
         const calculated = calcFood(food, grams);
 
@@ -631,10 +838,10 @@
 
         const ok = addOrUpdateFood({
           name: newFood.name.trim(),
-          calories: num(newFood.calories),
-          protein: num(newFood.protein),
-          fat: num(newFood.fat),
-          carbs: num(newFood.carbs)
+          calories: nonNegative(newFood.calories),
+          protein: nonNegative(newFood.protein),
+          fat: nonNegative(newFood.fat),
+          carbs: nonNegative(newFood.carbs)
         });
 
         if (ok) setNewFood({ name: "", calories: "", protein: "", fat: "", carbs: "" });
@@ -698,10 +905,10 @@
         setFoods(prev => prev.map(f => f.id === editingFoodId ? {
           ...f,
           name: newName,
-          calories: num(editingFood.calories),
-          protein: num(editingFood.protein),
-          fat: num(editingFood.fat),
-          carbs: num(editingFood.carbs)
+          calories: nonNegative(editingFood.calories),
+          protein: nonNegative(editingFood.protein),
+          fat: nonNegative(editingFood.fat),
+          carbs: nonNegative(editingFood.carbs)
         } : f));
 
         setEditingFoodId(null);
@@ -722,6 +929,109 @@
         }
       }
 
+      function updateWellnessDay(updater) {
+        setWellness(prev => {
+          const day = normalizeWellnessDay(prev.days?.[currentDate]);
+          const nextDay = normalizeWellnessDay(updater(day));
+
+          return {
+            ...prev,
+            days: {
+              ...(prev.days || {}),
+              [currentDate]: nextDay
+            }
+          };
+        });
+      }
+
+      function setSteps(value) {
+        updateWellnessDay(day => ({
+          ...day,
+          steps: Math.round(nonNegative(value))
+        }));
+      }
+
+      function setStepGoal(value) {
+        setWellness(prev => ({
+          ...prev,
+          stepGoal: Math.round(nonNegative(value))
+        }));
+      }
+
+      function toggleHabit(habitId) {
+        updateWellnessDay(day => ({
+          ...day,
+          habits: {
+            ...day.habits,
+            [habitId]: !day.habits[habitId]
+          }
+        }));
+      }
+
+      function addHabit(e) {
+        e.preventDefault();
+
+        const name = newHabitName.trim();
+        if (!name) return;
+
+        const duplicate = wellness.habits.some(habit => habit.name.trim().toLowerCase() === name.toLowerCase());
+        if (duplicate) {
+          alert(`Привычка «${name}» уже есть.`);
+          return;
+        }
+
+        setWellness(prev => ({
+          ...prev,
+          habits: [...prev.habits, { id: makeId(), name }]
+        }));
+        setNewHabitName("");
+      }
+
+      function deleteHabit(habitId) {
+        const habit = wellness.habits.find(item => item.id === habitId);
+        if (habit && !confirm(`Удалить привычку «${habit.name}»?`)) return;
+
+        setWellness(prev => {
+          const days = {};
+
+          Object.entries(prev.days || {}).forEach(([date, day]) => {
+            const normalizedDay = normalizeWellnessDay(day);
+            const habits = { ...normalizedDay.habits };
+            delete habits[habitId];
+            days[date] = { ...normalizedDay, habits };
+          });
+
+          return {
+            ...prev,
+            habits: prev.habits.filter(item => item.id !== habitId),
+            days
+          };
+        });
+      }
+
+      function togglePrayer(prayerId, field) {
+        updateWellnessDay(day => ({
+          ...day,
+          prayers: {
+            ...day.prayers,
+            [prayerId]: {
+              ...day.prayers[prayerId],
+              [field]: !day.prayers[prayerId]?.[field]
+            }
+          }
+        }));
+      }
+
+      function setWorkoutValue(exerciseId, value) {
+        updateWellnessDay(day => ({
+          ...day,
+          workouts: {
+            ...day.workouts,
+            [exerciseId]: Math.round(nonNegative(value))
+          }
+        }));
+      }
+
       function changeDate(offset) {
         const d = parseLocalDate(currentDate);
         d.setDate(d.getDate() + offset);
@@ -731,10 +1041,11 @@
 
       function exportBackup() {
         const data = {
-          version: 7,
+          version: 9,
           goals,
           foods,
           dailyLogs,
+          wellness,
           exportedAt: new Date().toISOString()
         };
 
@@ -758,6 +1069,7 @@
             if (data.goals) setGoals(normalizeGoals(data.goals));
             if (data.foods) setFoods(normalizeFoods(data.foods));
             if (data.dailyLogs) setDailyLogs(normalizeLogs(data.dailyLogs));
+            if (data.wellness) setWellness(normalizeWellness(data.wellness));
             alert("Backup восстановлен");
           } catch {
             alert("Не получилось прочитать backup");
@@ -781,15 +1093,15 @@
         <div className="flex flex-col h-[100dvh] w-full max-w-md mx-auto bg-[#09090b] text-zinc-100 font-sans shadow-2xl border-x border-zinc-900">
           <header className="shrink-0 pt-8 px-6 pb-4 bg-[#09090b] border-b border-zinc-800 flex justify-between items-center">
             <div>
-              <h1 className="text-lg font-bold">{activeTab === "diary" ? "Дневник" : "База и цели"}</h1>
-              <p className="text-[10px] text-zinc-500 font-bold uppercase mt-1">Трекер питания</p>
+              <h1 className="text-lg font-bold">{activeTitle}</h1>
+              <p className="text-[10px] text-zinc-500 font-bold uppercase mt-1">Питание и ритм</p>
             </div>
 
             <div className="text-right">
-              <div className={`text-lg font-black ${remainingCalories < 0 ? "text-rose-400" : "text-emerald-400"}`}>
-                {Math.round(remainingCalories)}
+              <div className={`text-lg font-black ${headerColor}`}>
+                {headerValue}
               </div>
-              <div className="text-[9px] text-zinc-500 font-bold uppercase">ккал осталось</div>
+              <div className="text-[9px] text-zinc-500 font-bold uppercase">{headerLabel}</div>
             </div>
           </header>
 
@@ -797,47 +1109,62 @@
             {activeTab === "diary" ? (
               <div className="space-y-6">
                 <div className="flex items-center justify-between bg-[#18181b] rounded-2xl p-1 border border-zinc-800/50">
-                  <button type="button" onClick={() => changeDate(-1)} className="fast-touch p-3 text-zinc-400 bg-transparent active:text-zinc-200">
+                  <button type="button" aria-label="Предыдущий день" onClick={() => changeDate(-1)} className="fast-touch p-3 text-zinc-400 bg-transparent active:text-zinc-200">
                     <IconChevronLeft className="w-5 h-5" />
                   </button>
 
-                  <button type="button" onClick={() => { setCurrentDate(today); setEditingLogId(null); }} className="fast-touch bg-transparent px-3 py-2">
+                  <button type="button" aria-label="Сегодня" onClick={() => { setCurrentDate(today); setEditingLogId(null); }} className="fast-touch bg-transparent px-3 py-2">
                     <div className="font-bold text-sm text-zinc-200">{displayDate(currentDate)}</div>
                     <div className="text-[9px] text-zinc-600 font-bold uppercase">{currentDate}</div>
                   </button>
 
-                  <button type="button" onClick={() => changeDate(1)} className="fast-touch p-3 text-zinc-400 bg-transparent active:text-zinc-200">
+                  <button type="button" aria-label="Следующий день" onClick={() => changeDate(1)} className="fast-touch p-3 text-zinc-400 bg-transparent active:text-zinc-200">
                     <IconChevronRight className="w-5 h-5" />
                   </button>
                 </div>
 
-                <div className="bg-[#18181b] rounded-3xl p-5 shadow-xl border border-zinc-800/50">
-                  <div className="flex justify-between items-end mb-4">
-                    <div>
-                      <p className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Калории</p>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-black">{Math.round(totals.calories)}</span>
-                        <span className="text-zinc-600 text-xs">/ {goals.calories}</span>
-                      </div>
-                    </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <StatCard
+                    icon={<IconFlame className="w-5 h-5" />}
+                    label="Ккал"
+                    value={Math.round(totals.calories)}
+                    sub={`${remainingCalories < 0 ? "перебор" : "осталось"} ${Math.round(Math.abs(remainingCalories))}`}
+                    color={remainingCalories < 0 ? "rose" : "emerald"}
+                    progress={pct(totals.calories, goals.calories)}
+                  />
 
-                    <div className={`text-right font-black ${remainingCalories < 0 ? "text-rose-400" : "text-emerald-400"}`}>
-                      <span className="text-2xl">{Math.round(Math.abs(remainingCalories))}</span>
-                      <span className="text-[10px] ml-1 uppercase">{remainingCalories < 0 ? "перебор" : "осталось"}</span>
-                    </div>
-                  </div>
+                  <StatCard
+                    icon={<IconActivity className="w-5 h-5" />}
+                    label="Белок"
+                    value={round(totals.protein, 1)}
+                    sub={`/ ${goals.protein} г`}
+                    color="indigo"
+                    progress={pct(totals.protein, goals.protein)}
+                  />
 
-                  <ProgressBar value={pct(totals.calories, goals.calories)} color={remainingCalories < 0 ? "rose" : "emerald"} />
+                  <StatCard
+                    icon={<IconTarget className="w-5 h-5" />}
+                    label="Жиры"
+                    value={round(totals.fat, 1)}
+                    sub={`/ ${goals.fat} г`}
+                    color="amber"
+                    progress={pct(totals.fat, goals.fat)}
+                  />
 
-                  <div className="grid grid-cols-3 gap-3 mt-5">
-                    <MacroCard label="Белок" value={totals.protein} target={goals.protein} color="indigo" />
-                    <MacroCard label="Жиры" value={totals.fat} target={goals.fat} color="amber" />
-                    <MacroCard label="Углев." value={totals.carbs} target={goals.carbs} color="sky" />
-                  </div>
+                  <StatCard
+                    icon={<IconDatabase className="w-5 h-5" />}
+                    label="Углев."
+                    value={round(totals.carbs, 1)}
+                    sub={`/ ${goals.carbs} г`}
+                    color="sky"
+                    progress={pct(totals.carbs, goals.carbs)}
+                  />
                 </div>
 
                 <form onSubmit={addLog} className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
-                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Добавить еду</h2>
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                    <IconPlus className="w-4 h-4" /> Добавить еду
+                  </h2>
 
                   <select
                     className="w-full bg-[#27272a] rounded-2xl p-4 outline-none appearance-none text-zinc-200"
@@ -853,13 +1180,14 @@
                     <input
                       type="number"
                       inputMode="decimal"
+                      min="0"
                       placeholder="Граммы"
                       className="flex-1 bg-[#27272a] rounded-2xl p-4 outline-none min-w-0 text-zinc-200"
                       value={gramsInput}
                       onChange={(e) => setGramsInput(e.target.value)}
                       required
                     />
-                    <button type="submit" className="w-14 shrink-0 bg-emerald-600 rounded-2xl flex items-center justify-center fast-touch active:scale-95 transition-transform">
+                    <button type="submit" aria-label="Добавить еду" className="w-14 shrink-0 bg-emerald-600 rounded-2xl flex items-center justify-center fast-touch active:scale-95 transition-transform">
                       <IconPlus className="w-6 h-6 text-white" />
                     </button>
                   </div>
@@ -874,17 +1202,22 @@
                   )}
                 </form>
 
-                <div className="space-y-3">
-                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Съедено за день</h2>
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                      <IconBook className="w-4 h-4" /> Съедено
+                    </h2>
+                    <span className="text-[10px] text-emerald-400 font-black">{currentDayLogs.length}</span>
+                  </div>
 
                   {currentDayLogs.length === 0 && (
-                    <div className="bg-[#18181b] rounded-2xl p-5 text-center text-zinc-500 text-sm border border-zinc-800/30">
+                    <div className="bg-[#27272a] rounded-2xl p-5 text-center text-zinc-500 text-sm border border-zinc-800/50">
                       Пока нет еды за этот день
                     </div>
                   )}
 
                   {currentDayLogs.map(log => (
-                    <div key={log.id} className="bg-[#18181b] rounded-2xl p-4 border border-zinc-800/30">
+                    <div key={log.id} className="bg-[#27272a] rounded-2xl p-4 border border-zinc-800/50">
                       {editingLogId === log.id ? (
                         <div className="space-y-3">
                           <select
@@ -898,6 +1231,7 @@
                           <input
                             type="number"
                             inputMode="decimal"
+                            min="0"
                             className="w-full bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-emerald-400 font-bold"
                             value={editingLog.grams}
                             onChange={(e) => setEditingLog({...editingLog, grams: e.target.value})}
@@ -926,11 +1260,11 @@
                               </div>
                             </div>
 
-                            <button onClick={() => startEditLog(log)} className="fast-touch text-zinc-600 active:text-indigo-400 p-1 bg-transparent">
+                            <button onClick={() => startEditLog(log)} aria-label={`Редактировать ${log.foodName}`} className="fast-touch text-zinc-600 active:text-indigo-400 p-1 bg-transparent">
                               <IconEdit className="w-5 h-5" />
                             </button>
 
-                            <button onClick={() => deleteLog(log.id)} className="fast-touch text-zinc-700 active:text-red-400 p-1 bg-transparent">
+                            <button onClick={() => deleteLog(log.id)} aria-label={`Удалить ${log.foodName}`} className="fast-touch text-zinc-700 active:text-red-400 p-1 bg-transparent">
                               <IconTrash className="w-5 h-5" />
                             </button>
                           </div>
@@ -940,8 +1274,272 @@
                   ))}
                 </div>
               </div>
+            ) : activeTab === "wellness" ? (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between bg-[#18181b] rounded-2xl p-1 border border-zinc-800/50">
+                  <button type="button" aria-label="Предыдущий день" onClick={() => changeDate(-1)} className="fast-touch p-3 text-zinc-400 bg-transparent active:text-zinc-200">
+                    <IconChevronLeft className="w-5 h-5" />
+                  </button>
+
+                  <button type="button" aria-label="Сегодня" onClick={() => { setCurrentDate(today); setEditingLogId(null); }} className="fast-touch bg-transparent px-3 py-2">
+                    <div className="font-bold text-sm text-zinc-200">{displayDate(currentDate)}</div>
+                    <div className="text-[9px] text-zinc-600 font-bold uppercase">{currentDate}</div>
+                  </button>
+
+                  <button type="button" aria-label="Следующий день" onClick={() => changeDate(1)} className="fast-touch p-3 text-zinc-400 bg-transparent active:text-zinc-200">
+                    <IconChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-[#18181b] rounded-2xl p-4 border border-zinc-800/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <IconFootprints className="w-5 h-5 text-sky-400" />
+                      <span className="text-[10px] text-sky-400 font-black">{Math.round(stepProgress)}%</span>
+                    </div>
+                    <div className="text-2xl font-black">{currentWellnessDay.steps}</div>
+                    <div className="text-[9px] text-zinc-500 font-bold uppercase">шагов</div>
+                  </div>
+
+                  <div className="bg-[#18181b] rounded-2xl p-4 border border-zinc-800/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <IconCheckCircle className="w-5 h-5 text-emerald-400" />
+                      <span className="text-[10px] text-emerald-400 font-black">{habitDoneCount}/{wellness.habits.length}</span>
+                    </div>
+                    <div className="text-2xl font-black">{habitDoneCount}</div>
+                    <div className="text-[9px] text-zinc-500 font-bold uppercase">привычек</div>
+                  </div>
+
+                  <div className="bg-[#18181b] rounded-2xl p-4 border border-zinc-800/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <IconMoon className="w-5 h-5 text-indigo-400" />
+                      <span className="text-[10px] text-indigo-400 font-black">{prayerDoneCount}/5</span>
+                    </div>
+                    <div className="text-2xl font-black">{prayerDoneCount}</div>
+                    <div className="text-[9px] text-zinc-500 font-bold uppercase">намазов</div>
+                  </div>
+
+                  <div className="bg-[#18181b] rounded-2xl p-4 border border-zinc-800/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <IconDumbbell className="w-5 h-5 text-amber-400" />
+                      <span className="text-[10px] text-amber-400 font-black">{workoutDoneCount}/5</span>
+                    </div>
+                    <div className="text-2xl font-black">{workoutDoneCount}</div>
+                    <div className="text-[9px] text-zinc-500 font-bold uppercase">упражнений</div>
+                  </div>
+                </div>
+
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-4">
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                    <IconFootprints className="w-4 h-4" /> Шаги
+                  </h2>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <span className="text-[9px] text-zinc-500 font-bold block mb-1">СЕГОДНЯ</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        className="w-full bg-[#27272a] rounded-xl p-3 text-sky-400 font-bold outline-none min-w-0"
+                        value={currentWellnessDay.steps || ""}
+                        onChange={(e) => setSteps(e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
+
+                    <div>
+                      <span className="text-[9px] text-zinc-500 font-bold block mb-1">ЦЕЛЬ</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min="1"
+                        className="w-full bg-[#27272a] rounded-xl p-3 text-zinc-200 font-bold outline-none min-w-0"
+                        value={wellness.stepGoal}
+                        onChange={(e) => setStepGoal(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <ProgressBar value={stepProgress} color="sky" />
+
+                  <div className="text-xs text-zinc-500 font-bold">
+                    {currentWellnessDay.steps >= wellness.stepGoal ? "Цель выполнена" : `${Math.max(0, wellness.stepGoal - currentWellnessDay.steps)} шагов до цели`}
+                  </div>
+                </div>
+
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                      <IconCheckCircle className="w-4 h-4" /> Привычки
+                    </h2>
+                    <span className="text-[10px] text-emerald-400 font-black">{habitDoneCount}/{wellness.habits.length}</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {wellness.habits.length === 0 && (
+                      <div className="bg-[#27272a] rounded-2xl p-4 text-center text-zinc-500 text-sm">
+                        Список привычек пуст
+                      </div>
+                    )}
+
+                    {wellness.habits.map(habit => {
+                      const done = currentWellnessDay.habits[habit.id];
+
+                      return (
+                        <div key={habit.id} className={`flex items-center gap-2 rounded-2xl border p-2 ${done ? "bg-emerald-500/10 border-emerald-500/30" : "bg-[#27272a] border-zinc-800/50"}`}>
+                          <button type="button" onClick={() => toggleHabit(habit.id)} className="fast-touch flex-1 flex items-center gap-3 min-w-0 bg-transparent text-left">
+                            <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${done ? "bg-emerald-500 text-white" : "bg-zinc-900 text-zinc-600"}`}>
+                              {done ? <IconCheckCircle className="w-5 h-5" /> : <span className="w-2 h-2 rounded-full bg-zinc-600" />}
+                            </span>
+                            <span className={`text-sm font-bold truncate ${done ? "text-emerald-100" : "text-zinc-200"}`}>{habit.name}</span>
+                          </button>
+
+                          <button type="button" onClick={() => deleteHabit(habit.id)} aria-label={`Удалить привычку ${habit.name}`} className="fast-touch text-zinc-700 active:text-red-400 p-2 bg-transparent">
+                            <IconTrash className="w-5 h-5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <form onSubmit={addHabit} className="flex gap-2">
+                    <input
+                      type="text"
+                      className="flex-1 bg-[#27272a] rounded-xl p-3 outline-none min-w-0 text-zinc-200"
+                      value={newHabitName}
+                      onChange={(e) => setNewHabitName(e.target.value)}
+                      placeholder="Новая привычка"
+                    />
+                    <button type="submit" aria-label="Добавить привычку" className="w-12 shrink-0 bg-emerald-600 rounded-xl flex items-center justify-center fast-touch active:scale-95 transition-transform">
+                      <IconPlus className="w-5 h-5 text-white" />
+                    </button>
+                  </form>
+                </div>
+
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                      <IconMoon className="w-4 h-4" /> Намазы
+                    </h2>
+                    <div className="text-right">
+                      <div className="text-[10px] text-indigo-400 font-black">намаз {prayerDoneCount}/5</div>
+                      <div className="text-[9px] text-sky-400 font-black">зикр {dhikrDoneCount}/5</div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {prayerList.map(prayer => {
+                      const prayerDone = currentWellnessDay.prayers[prayer.id]?.prayer;
+                      const dhikrDone = currentWellnessDay.prayers[prayer.id]?.dhikr;
+
+                      return (
+                        <div key={prayer.id} className="rounded-2xl p-3 border border-zinc-800/50 bg-[#27272a]">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="font-bold text-sm truncate">{prayer.label}</span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button
+                                type="button"
+                                aria-label={`${prayer.label} намаз`}
+                                onClick={() => togglePrayer(prayer.id, "prayer")}
+                                className={`fast-touch w-9 h-9 rounded-full border flex items-center justify-center transition-all ${prayerDone ? "bg-indigo-500 border-indigo-400 text-white" : "bg-zinc-900 border-zinc-800 text-zinc-700"}`}
+                              >
+                                <span className="sr-only">Намаз</span>
+                                <span className="w-5 h-5 rounded-full flex items-center justify-center">
+                                  {prayerDone ? <IconCheckCircle className="w-4 h-4" /> : ""}
+                                </span>
+                              </button>
+
+                              <button
+                                type="button"
+                                aria-label={`${prayer.label} зикр`}
+                                onClick={() => togglePrayer(prayer.id, "dhikr")}
+                                className={`fast-touch w-9 h-9 rounded-full border flex items-center justify-center transition-all ${dhikrDone ? "bg-sky-500 border-sky-400 text-white" : "bg-zinc-900 border-zinc-800 text-zinc-700"}`}
+                              >
+                                <span className="sr-only">Зикр</span>
+                                <span className="w-5 h-5 rounded-full flex items-center justify-center">
+                                  {dhikrDone ? <IconCheckCircle className="w-4 h-4" /> : ""}
+                                </span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                      <IconDumbbell className="w-4 h-4" /> Тренировки
+                    </h2>
+                    <span className="text-[10px] text-amber-400 font-black">{workoutDoneCount}/5</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {workoutList.map(exercise => {
+                      const value = currentWellnessDay.workouts[exercise.id] || "";
+
+                      return (
+                        <div key={exercise.id} className="grid grid-cols-[1fr_96px] gap-3 items-center bg-[#27272a] rounded-2xl p-3 border border-zinc-800/50">
+                          <div className="min-w-0">
+                            <div className="font-bold text-sm truncate">{exercise.label}</div>
+                            <div className="text-[10px] text-zinc-500 font-bold uppercase mt-1">{exercise.unit}</div>
+                          </div>
+
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            min="0"
+                            className="w-full bg-zinc-900 rounded-xl p-3 outline-none text-amber-400 font-black text-right min-w-0"
+                            value={value}
+                            onChange={(e) => setWorkoutValue(exercise.id, e.target.value)}
+                            placeholder="0"
+                            aria-label={exercise.label}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
             ) : (
-              <div className="space-y-8">
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-3">
+                  <StatCard
+                    icon={<IconDatabase className="w-5 h-5" />}
+                    label="База"
+                    value={foods.length}
+                    sub="продуктов"
+                    color="indigo"
+                  />
+
+                  <StatCard
+                    icon={<IconTarget className="w-5 h-5" />}
+                    label="Цель"
+                    value={goals.calories}
+                    sub="ккал в день"
+                    color="emerald"
+                  />
+
+                  <StatCard
+                    icon={<IconCalendar className="w-5 h-5" />}
+                    label="Еда"
+                    value={loggedFoodDaysCount}
+                    sub="дней с едой"
+                    color="amber"
+                  />
+
+                  <StatCard
+                    icon={<IconActivity className="w-5 h-5" />}
+                    label="Ритм"
+                    value={rhythmDaysCount}
+                    sub="дней записей"
+                    color="sky"
+                  />
+                </div>
+
                 <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50">
                   <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                     <IconTarget className="w-4 h-4" /> Дневные цели
@@ -956,7 +1554,9 @@
                 </div>
 
                 <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
-                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Вставить продукт JSON / из ответа ChatGPT</h2>
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                    <IconDownload className="w-4 h-4" /> Импорт продукта
+                  </h2>
 
                   <textarea
                     className="w-full bg-[#27272a] rounded-2xl p-4 outline-none min-h-[120px] text-zinc-200"
@@ -975,13 +1575,12 @@
                     </button>
                   </div>
 
-                  <p className="text-xs text-zinc-500 leading-relaxed">
-                    Самый надёжный формат — JSON на 100 г. Можно вставить один объект или массив продуктов. «Заполнить поля» берёт первый продукт, «Добавить сразу» добавляет все.
-                  </p>
                 </div>
 
                 <form onSubmit={saveFood} className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-4">
-                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Новый продукт на 100 г</h2>
+                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                    <IconPlus className="w-4 h-4" /> Новый продукт на 100 г
+                  </h2>
 
                   <InputBox label="НАЗВАНИЕ" type="text" value={newFood.name} color="text-zinc-200" placeholder="Название" setValue={(v) => setNewFood({...newFood, name: v})} />
 
@@ -997,11 +1596,16 @@
                   </button>
                 </form>
 
-                <div className="space-y-2">
-                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase mb-2">Список продуктов ({foods.length})</h2>
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                      <IconBook className="w-4 h-4" /> Продукты
+                    </h2>
+                    <span className="text-[10px] text-indigo-400 font-black">{foods.length}</span>
+                  </div>
 
                   {foods.map(f => (
-                    <div key={f.id} className="bg-[#18181b] rounded-xl p-3 border border-zinc-800/30">
+                    <div key={f.id} className="bg-[#27272a] rounded-2xl p-3 border border-zinc-800/50">
                       {editingFoodId === f.id ? (
                         <div className="space-y-3">
                           <InputBox label="НАЗВАНИЕ" type="text" value={editingFood.name} color="text-zinc-200" setValue={(v) => setEditingFood({...editingFood, name: v})} />
@@ -1030,11 +1634,11 @@
                             </div>
                           </div>
 
-                          <button onClick={() => startEditFood(f)} className="fast-touch text-zinc-600 active:text-indigo-400 p-2 bg-transparent">
+                          <button onClick={() => startEditFood(f)} aria-label={`Редактировать ${f.name}`} className="fast-touch text-zinc-600 active:text-indigo-400 p-2 bg-transparent">
                             <IconEdit className="w-5 h-5" />
                           </button>
 
-                          <button onClick={() => deleteFood(f.id)} className="fast-touch text-zinc-800 active:text-red-500 p-2 bg-transparent">
+                          <button onClick={() => deleteFood(f.id)} aria-label={`Удалить ${f.name}`} className="fast-touch text-zinc-800 active:text-red-500 p-2 bg-transparent">
                             <IconTrash className="w-5 h-5" />
                           </button>
                         </div>
@@ -1048,18 +1652,16 @@
                     <IconDownload className="w-4 h-4" /> Backup
                   </h2>
 
-                  <button type="button" onClick={exportBackup} className="fast-touch w-full bg-emerald-600 active:bg-emerald-700 text-white rounded-xl p-4 font-bold transition-transform active:scale-95">
-                    Скачать backup
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button type="button" onClick={exportBackup} className="fast-touch bg-emerald-600 active:bg-emerald-700 text-white rounded-xl p-4 font-bold transition-transform active:scale-95">
+                      Скачать
+                    </button>
 
-                  <label className="block fast-touch w-full bg-[#27272a] active:bg-zinc-700 text-white rounded-xl p-4 font-bold text-center transition-transform active:scale-95">
-                    Загрузить backup
-                    <input type="file" accept="application/json" className="hidden" onChange={importBackup} />
-                  </label>
-
-                  <p className="text-xs text-zinc-500 leading-relaxed">
-                    Скачай JSON и скинь мне сюда — я смогу проанализировать КБЖУ, продукты и динамику по дням.
-                  </p>
+                    <label className="block fast-touch bg-[#27272a] active:bg-zinc-700 text-white rounded-xl p-4 font-bold text-center transition-transform active:scale-95">
+                      Загрузить
+                      <input type="file" accept="application/json" className="hidden" onChange={importBackup} />
+                    </label>
+                  </div>
                 </div>
               </div>
             )}
@@ -1069,6 +1671,11 @@
             <button type="button" onClick={() => switchTab("diary")} className={`fast-touch flex-1 flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "diary" ? "text-emerald-400" : "text-zinc-600 active:text-zinc-400"}`}>
               <IconCalendar className="w-6 h-6" />
               <span className="text-[9px] font-bold mt-1 uppercase">Дневник</span>
+            </button>
+
+            <button type="button" onClick={() => switchTab("wellness")} className={`fast-touch flex-1 flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "wellness" ? "text-sky-400" : "text-zinc-600 active:text-zinc-400"}`}>
+              <IconActivity className="w-6 h-6" />
+              <span className="text-[9px] font-bold mt-1 uppercase">Ритм</span>
             </button>
 
             <button type="button" onClick={() => switchTab("directory")} className={`fast-touch flex-1 flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "directory" ? "text-indigo-400" : "text-zinc-600 active:text-zinc-400"}`}>
