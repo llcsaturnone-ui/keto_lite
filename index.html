@@ -221,6 +221,8 @@
     const IconMoon = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 7 9 9 0 1 1-9-7Z"/></svg>;
     const IconFlame = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17c1.4 0 2.8-1 2.8-2.7 0-1.5-1-2.3-2.1-3.2C10.4 10 9 8.8 9 6.5 9 4.8 10 3.5 11.1 2.7c.3 2.1 1.7 3.4 3 4.7 1.8 1.8 3.4 3.4 3.4 6.1A6.5 6.5 0 1 1 5.7 9.8c0 1.8.8 3.1 2.8 4.7Z"/></svg>;
     const IconDatabase = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>;
+    const IconSettings = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.2a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4a2 2 0 0 0 .7 2.7l.2.1a2 2 0 0 1 1 1.7v.5a2 2 0 0 1-1 1.7l-.2.1a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.2a2 2 0 0 1 1 1.7v.2a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.2a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.7v-.5a2 2 0 0 1 1-1.7l.2-.1a2 2 0 0 0 .7-2.7l-.2-.4a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.2a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2Z"/><circle cx="12" cy="12" r="3"/></svg>;
+    const IconX = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>;
 
     const STORAGE = {
       goals: "diet_goals_v2",
@@ -256,6 +258,12 @@
       if (dateString === getLocalDateString(tomorrow)) return "Завтра";
 
       return d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    };
+
+    const shiftDate = (dateString, offset) => {
+      const d = parseLocalDate(dateString);
+      d.setDate(d.getDate() + offset);
+      return getLocalDateString(d);
     };
 
     const num = (value) => {
@@ -319,6 +327,7 @@
     const defaultWellness = {
       stepGoal: 10000,
       habits: defaultHabits,
+      workoutDefaults: {},
       days: {}
     };
 
@@ -337,6 +346,8 @@
     function makeEmptyWellnessDay() {
       return {
         steps: 0,
+        dhikrCount: 0,
+        habitIds: null,
         habits: {},
         prayers: emptyPrayers(),
         workouts: emptyWorkouts()
@@ -458,8 +469,30 @@
       return entry.reps * entry.sets.filter(Boolean).length;
     };
 
-    function normalizeWorkouts(value) {
-      const workouts = emptyWorkouts();
+    function normalizeWorkoutDefaults(value) {
+      const defaults = {};
+
+      if (!value || typeof value !== "object" || Array.isArray(value)) return defaults;
+
+      workoutList.forEach(exercise => {
+        defaults[exercise.id] = Math.round(nonNegative(value[exercise.id]));
+      });
+
+      return defaults;
+    }
+
+    function makeDefaultWorkouts(workoutDefaults = {}) {
+      return workoutList.reduce((acc, exercise) => {
+        acc[exercise.id] = {
+          ...emptyWorkoutEntry(),
+          reps: Math.round(nonNegative(workoutDefaults[exercise.id]))
+        };
+        return acc;
+      }, {});
+    }
+
+    function normalizeWorkouts(value, workoutDefaults = {}) {
+      const workouts = makeDefaultWorkouts(workoutDefaults);
 
       if (Array.isArray(value)) {
         value.forEach(workout => {
@@ -489,8 +522,27 @@
       return workouts;
     }
 
-    function normalizeWellnessDay(value) {
-      const empty = makeEmptyWellnessDay();
+    function normalizeHabitIds(value) {
+      if (!Array.isArray(value)) return null;
+
+      const usedIds = new Set();
+      const ids = [];
+
+      value.forEach(id => {
+        const normalizedId = String(id);
+        if (!normalizedId || usedIds.has(normalizedId)) return;
+        usedIds.add(normalizedId);
+        ids.push(normalizedId);
+      });
+
+      return ids;
+    }
+
+    function normalizeWellnessDay(value, workoutDefaults = {}) {
+      const empty = {
+        ...makeEmptyWellnessDay(),
+        workouts: makeDefaultWorkouts(workoutDefaults)
+      };
       if (!value || typeof value !== "object" || Array.isArray(value)) return empty;
 
       const habits = {};
@@ -502,9 +554,11 @@
 
       return {
         steps: Math.round(nonNegative(value.steps)),
+        dhikrCount: Math.round(nonNegative(value.dhikrCount ?? value.zikrCount ?? value.suohazhCount)),
+        habitIds: normalizeHabitIds(value.habitIds),
         habits,
         prayers: normalizePrayers(value.prayers),
-        workouts: normalizeWorkouts(value.workouts)
+        workouts: normalizeWorkouts(value.workouts, workoutDefaults)
       };
     }
 
@@ -518,17 +572,74 @@
         return { ...habit, id };
       });
 
+      const workoutDefaults = normalizeWorkoutDefaults(value?.workoutDefaults);
       const days = {};
       if (value?.days && typeof value.days === "object" && !Array.isArray(value.days)) {
         Object.entries(value.days).forEach(([date, day]) => {
-          if (/^\d{4}-\d{2}-\d{2}$/.test(date)) days[date] = normalizeWellnessDay(day);
+          if (/^\d{4}-\d{2}-\d{2}$/.test(date)) days[date] = normalizeWellnessDay(day, workoutDefaults);
         });
       }
 
       return {
         stepGoal: value?.stepGoal === undefined || value?.stepGoal === null || value?.stepGoal === "" ? defaultWellness.stepGoal : Math.round(nonNegative(value.stepGoal)),
         habits: habits.length ? habits : defaultHabits,
+        workoutDefaults,
         days
+      };
+    }
+
+    function sameStringArray(first, second) {
+      if (!Array.isArray(first) || !Array.isArray(second)) return false;
+      if (first.length !== second.length) return false;
+      return first.every((item, index) => item === second[index]);
+    }
+
+    function getHabitIdsForDate(wellnessValue, dateString, seen = new Set()) {
+      const allIds = wellnessValue.habits.map(habit => habit.id);
+      const allIdSet = new Set(allIds);
+      const rawDay = wellnessValue.days?.[dateString];
+      const day = normalizeWellnessDay(rawDay, wellnessValue.workoutDefaults);
+
+      if (seen.has(dateString)) return allIds;
+      seen.add(dateString);
+
+      const previousDate = shiftDate(dateString, -1);
+      const previousRawDay = wellnessValue.days?.[previousDate];
+      const savedIds = Array.isArray(day.habitIds) ? day.habitIds.filter(id => allIdSet.has(id)) : null;
+
+      if (!previousRawDay) return savedIds || allIds;
+
+      const previousDay = normalizeWellnessDay(previousRawDay, wellnessValue.workoutDefaults);
+      const previousIds = getHabitIdsForDate(wellnessValue, previousDate, seen);
+      const previousIdSet = new Set(previousIds);
+      const carriedIds = previousIds.filter(id => !previousDay.habits[id]);
+
+      if (savedIds) {
+        const carriedSet = new Set(carriedIds);
+        const keptSavedIds = savedIds.filter(id => !previousIdSet.has(id) || carriedSet.has(id));
+
+        return [
+          ...carriedIds,
+          ...keptSavedIds.filter(id => !carriedSet.has(id))
+        ];
+      }
+
+      return carriedIds;
+    }
+
+    function setDayHabitIds(wellnessValue, dateString, habitIds) {
+      const rawDay = wellnessValue.days?.[dateString];
+      const baseDay = rawDay && typeof rawDay === "object" && !Array.isArray(rawDay) ? rawDay : {};
+
+      return {
+        ...wellnessValue,
+        days: {
+          ...(wellnessValue.days || {}),
+          [dateString]: {
+            ...baseDay,
+            habitIds: normalizeHabitIds(habitIds)
+          }
+        }
       };
     }
 
@@ -876,6 +987,7 @@
       const mainRef = useRef(null);
       const draggedHabitRef = useRef(null);
       const habitItemRefs = useRef({});
+      const dhikrResetTimerRef = useRef(null);
 
       const [goals, setGoals] = useState(() => safeLoad(STORAGE.goals, defaultGoals, normalizeGoals));
       const [foods, setFoods] = useState(() => safeLoad(STORAGE.foods, defaultFoods, normalizeFoods));
@@ -883,6 +995,7 @@
       const [wellness, setWellness] = useState(() => safeLoad(STORAGE.wellness, defaultWellness, normalizeWellness));
       const [currentDate, setCurrentDate] = useState(today);
       const [activeTab, setActiveTab] = useState("diary");
+      const [settingsOpen, setSettingsOpen] = useState(false);
 
       const [selectedFoodId, setSelectedFoodId] = useState("");
       const [gramsInput, setGramsInput] = useState("");
@@ -899,18 +1012,57 @@
       const [editingHabitName, setEditingHabitName] = useState("");
       const [draggedHabitId, setDraggedHabitId] = useState(null);
       const [dragPreview, setDragPreview] = useState(null);
+      const [dhikrResetArmed, setDhikrResetArmed] = useState(false);
 
       useEffect(() => safeSave(STORAGE.goals, goals), [goals]);
       useEffect(() => safeSave(STORAGE.foods, foods), [foods]);
       useEffect(() => safeSave(STORAGE.logs, dailyLogs), [dailyLogs]);
       useEffect(() => safeSave(STORAGE.wellness, wellness), [wellness]);
 
+      useEffect(() => () => cancelDhikrReset(), []);
+
       useEffect(() => {
         if (mainRef.current) mainRef.current.scrollTop = 0;
-      }, [activeTab, currentDate]);
+      }, [activeTab]);
+
+      useEffect(() => {
+        setWellness(prev => {
+          const day = normalizeWellnessDay(prev.days?.[currentDate], prev.workoutDefaults);
+          const nextHabitIds = getHabitIdsForDate(prev, currentDate);
+          if (sameStringArray(day.habitIds, nextHabitIds)) return prev;
+
+          return setDayHabitIds(prev, currentDate, nextHabitIds);
+        });
+      }, [currentDate]);
+
+      useEffect(() => {
+        if (!draggedHabitId) return undefined;
+
+        const move = (event) => handleHabitPointerMove(event);
+        const up = (event) => handleHabitPointerUp(event);
+        const cancel = () => stopHabitDragging();
+
+        window.addEventListener("pointermove", move, { passive: false });
+        window.addEventListener("pointerup", up);
+        window.addEventListener("pointercancel", cancel);
+
+        return () => {
+          window.removeEventListener("pointermove", move);
+          window.removeEventListener("pointerup", up);
+          window.removeEventListener("pointercancel", cancel);
+        };
+      }, [draggedHabitId]);
 
       const currentDayLogs = dailyLogs[currentDate] || [];
-      const currentWellnessDay = useMemo(() => normalizeWellnessDay(wellness.days?.[currentDate]), [wellness.days, currentDate]);
+      const currentWellnessDay = useMemo(() => normalizeWellnessDay(wellness.days?.[currentDate], wellness.workoutDefaults), [wellness.days, wellness.workoutDefaults, currentDate]);
+      const currentHabitIds = useMemo(() => getHabitIdsForDate(wellness, currentDate), [wellness, currentDate]);
+      const visibleHabits = useMemo(() => {
+        const ids = new Set(currentHabitIds);
+        return currentHabitIds
+          .map(id => wellness.habits.find(habit => habit.id === id))
+          .filter(Boolean)
+          .concat(wellness.habits.filter(habit => !ids.has(habit.id) && currentWellnessDay.habits[habit.id]));
+      }, [currentHabitIds, currentWellnessDay.habits, wellness.habits]);
 
       const displayedDayLogs = useMemo(() => {
         return currentDayLogs
@@ -939,17 +1091,50 @@
       const remainingProtein = num(goals.protein) - totals.protein;
       const remainingFat = num(goals.fat) - totals.fat;
       const remainingCarbs = num(goals.carbs) - totals.carbs;
-      const habitDoneCount = wellness.habits.filter(habit => currentWellnessDay.habits[habit.id]).length;
+      const habitDoneCount = visibleHabits.filter(habit => currentWellnessDay.habits[habit.id]).length;
       const prayerDoneCount = prayerList.filter(prayer => currentWellnessDay.prayers[prayer.id]?.prayer).length;
       const dhikrDoneCount = prayerList.filter(prayer => currentWellnessDay.prayers[prayer.id]?.dhikr).length;
       const workoutDoneCount = workoutList.filter(exercise => workoutSetCount(currentWellnessDay.workouts[exercise.id]) > 0).length;
       const stepProgress = pct(currentWellnessDay.steps, wellness.stepGoal);
-      const activeTitle = activeTab === "diary" ? "Дневник" : activeTab === "wellness" ? "Ритм дня" : "База и цели";
       const loggedFoodDaysCount = Object.values(dailyLogs).filter(day => Array.isArray(day) && day.length > 0).length;
       const rhythmDaysCount = Object.keys(wellness.days || {}).length;
-      const headerValue = activeTab === "wellness" ? `${Math.round(stepProgress)}%` : activeTab === "directory" ? foods.length : Math.round(remainingCalories);
-      const headerLabel = activeTab === "wellness" ? "цель шагов" : activeTab === "directory" ? "продуктов" : "ккал осталось";
-      const headerColor = activeTab === "wellness" ? "text-sky-400" : activeTab === "directory" ? "text-indigo-400" : (remainingCalories < 0 ? "text-rose-400" : "text-emerald-400");
+      const tabMeta = {
+        diary: {
+          title: "Дневник",
+          value: Math.round(Math.abs(remainingCalories)),
+          label: remainingCalories < 0 ? "перебор ккал" : "ккал осталось",
+          color: remainingCalories < 0 ? "text-rose-400" : "text-emerald-400"
+        },
+        tasks: {
+          title: "Дела",
+          value: `${habitDoneCount}/${visibleHabits.length}`,
+          label: "сделано",
+          color: "text-emerald-400"
+        },
+        prayers: {
+          title: "Намаз",
+          value: `${prayerDoneCount}/5`,
+          label: `зикр ${dhikrDoneCount}/5`,
+          color: "text-indigo-400"
+        },
+        workouts: {
+          title: "Тренировки",
+          value: `${workoutDoneCount}/5`,
+          label: `${Math.round(stepProgress)}% шагов`,
+          color: "text-amber-400"
+        },
+        directory: {
+          title: "База и цели",
+          value: foods.length,
+          label: "продуктов",
+          color: "text-indigo-400"
+        }
+      };
+      const activeMeta = tabMeta[activeTab] || tabMeta.diary;
+      const activeTitle = activeMeta.title;
+      const headerValue = activeMeta.value;
+      const headerLabel = activeMeta.label;
+      const headerColor = activeMeta.color;
 
       const macroLeftText = (value) => `${value < 0 ? "перебор" : "осталось"} ${round(Math.abs(value), 1)} г`;
 
@@ -1020,10 +1205,18 @@
       }
 
       function deleteLog(logId) {
+        const log = (dailyLogs[currentDate] || []).find(item => item.id === logId);
+        if (log && !confirm(`Удалить «${log.foodName}» из съеденного?`)) return;
+
         setDailyLogs(prev => ({
           ...prev,
           [currentDate]: (prev[currentDate] || []).filter(l => l.id !== logId)
         }));
+
+        if (editingLogId === logId) {
+          setEditingLogId(null);
+          setEditingLog({ foodId: "", grams: "" });
+        }
       }
 
       function startEditLog(log) {
@@ -1160,8 +1353,14 @@
 
       function updateWellnessDay(updater) {
         setWellness(prev => {
-          const day = normalizeWellnessDay(prev.days?.[currentDate]);
-          const nextDay = normalizeWellnessDay(updater(day));
+          const day = normalizeWellnessDay(prev.days?.[currentDate], prev.workoutDefaults);
+          const nextDay = normalizeWellnessDay(
+            updater({
+              ...day,
+              habitIds: Array.isArray(day.habitIds) ? day.habitIds : getHabitIdsForDate(prev, currentDate)
+            }),
+            prev.workoutDefaults
+          );
 
           return {
             ...prev,
@@ -1209,15 +1408,47 @@
         const name = newHabitName.trim();
         if (!name) return;
 
-        const duplicate = wellness.habits.some(habit => habit.name.trim().toLowerCase() === name.toLowerCase());
+        const duplicate = wellness.habits.find(habit => habit.name.trim().toLowerCase() === name.toLowerCase());
         if (duplicate) {
-          alert(`Напоминание «${name}» уже есть.`);
+          if (visibleHabits.some(habit => habit.id === duplicate.id)) {
+            alert(`Напоминание «${name}» уже есть.`);
+            return;
+          }
+
+          setWellness(prev => {
+            const ids = getHabitIdsForDate(prev, currentDate).filter(id => id !== duplicate.id);
+            const next = setDayHabitIds(prev, currentDate, [duplicate.id, ...ids]);
+            const day = normalizeWellnessDay(next.days?.[currentDate], next.workoutDefaults);
+
+            return {
+              ...next,
+              days: {
+                ...next.days,
+                [currentDate]: {
+                  ...next.days[currentDate],
+                  habits: {
+                    ...day.habits,
+                    [duplicate.id]: false
+                  }
+                }
+              }
+            };
+          });
+          setNewHabitName("");
           return;
         }
 
+        const newHabit = { id: makeId(), name };
         setWellness(prev => ({
           ...prev,
-          habits: [{ id: makeId(), name }, ...prev.habits]
+          habits: [newHabit, ...prev.habits],
+          days: {
+            ...(prev.days || {}),
+            [currentDate]: {
+              ...(prev.days?.[currentDate] || {}),
+              habitIds: [newHabit.id, ...getHabitIdsForDate(prev, currentDate)]
+            }
+          }
         }));
         setNewHabitName("");
       }
@@ -1251,13 +1482,10 @@
 
       function moveHabitToBottom(habitId) {
         setWellness(prev => {
-          const habit = prev.habits.find(item => item.id === habitId);
-          if (!habit) return prev;
+          const ids = getHabitIdsForDate(prev, currentDate);
+          if (!ids.includes(habitId)) return prev;
 
-          return {
-            ...prev,
-            habits: [...prev.habits.filter(item => item.id !== habitId), habit]
-          };
+          return setDayHabitIds(prev, currentDate, [...ids.filter(id => id !== habitId), habitId]);
         });
       }
 
@@ -1297,19 +1525,20 @@
         const previousRects = getHabitRects();
 
         setWellness(prev => {
-          const currentIndex = prev.habits.findIndex(habit => habit.id === draggedId);
-          const targetIndex = prev.habits.findIndex(habit => habit.id === targetId);
+          const habits = getHabitIdsForDate(prev, currentDate);
+          const currentIndex = habits.findIndex(id => id === draggedId);
+          const targetIndex = habits.findIndex(id => id === targetId);
 
           if (currentIndex < 0 || targetIndex < 0) return prev;
 
-          const habits = [...prev.habits];
-          const [habit] = habits.splice(currentIndex, 1);
-          const targetIndexAfterRemoval = habits.findIndex(item => item.id === targetId);
+          const nextHabits = [...habits];
+          const [habit] = nextHabits.splice(currentIndex, 1);
+          const targetIndexAfterRemoval = nextHabits.findIndex(id => id === targetId);
           const nextIndex = targetIndexAfterRemoval + (placeAfter ? 1 : 0);
 
-          habits.splice(nextIndex, 0, habit);
+          nextHabits.splice(nextIndex, 0, habit);
 
-          return { ...prev, habits };
+          return setDayHabitIds(prev, currentDate, nextHabits);
         });
 
         animateHabitLayout(previousRects);
@@ -1343,12 +1572,12 @@
       function handleHabitPointerDown(event, habitId) {
         event.preventDefault();
         setHabitDragging(habitId, event);
-        event.currentTarget.setPointerCapture?.(event.pointerId);
       }
 
       function handleHabitPointerMove(event) {
         const draggedId = draggedHabitRef.current;
         if (!draggedId) return;
+        if (event.cancelable) event.preventDefault();
 
         setDragPreview(prev => prev ? {
           ...prev,
@@ -1388,10 +1617,14 @@
           const days = {};
 
           Object.entries(prev.days || {}).forEach(([date, day]) => {
-            const normalizedDay = normalizeWellnessDay(day);
+            const normalizedDay = normalizeWellnessDay(day, prev.workoutDefaults);
             const habits = { ...normalizedDay.habits };
             delete habits[habitId];
-            days[date] = { ...normalizedDay, habits };
+            days[date] = {
+              ...normalizedDay,
+              habitIds: Array.isArray(normalizedDay.habitIds) ? normalizedDay.habitIds.filter(id => id !== habitId) : normalizedDay.habitIds,
+              habits
+            };
           });
 
           return {
@@ -1417,17 +1650,117 @@
         }));
       }
 
-      function setWorkoutValue(exerciseId, value) {
+      function playDhikrSignal(count) {
+        if (![33, 66, 99].includes(count)) return;
+
+        try {
+          navigator.vibrate?.([90, 45, 90]);
+        } catch {}
+
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return;
+
+          const context = new AudioContext();
+          const oscillator = context.createOscillator();
+          const gain = context.createGain();
+
+          oscillator.type = "sine";
+          oscillator.frequency.value = count === 99 ? 880 : 660;
+          gain.gain.setValueAtTime(0.0001, context.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.18, context.currentTime + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.22);
+          oscillator.connect(gain);
+          gain.connect(context.destination);
+          oscillator.start();
+          oscillator.stop(context.currentTime + 0.24);
+          setTimeout(() => context.close?.(), 350);
+        } catch {}
+      }
+
+      function incrementDhikrCounter() {
+        const nextCount = currentWellnessDay.dhikrCount + 1;
+
         updateWellnessDay(day => ({
           ...day,
-          workouts: {
-            ...day.workouts,
-            [exerciseId]: {
-              ...normalizeWorkoutEntry(day.workouts[exerciseId]),
-              reps: Math.round(nonNegative(value))
-            }
-          }
+          dhikrCount: nextCount
         }));
+
+        playDhikrSignal(nextCount);
+      }
+
+      function resetDhikrCounter() {
+        updateWellnessDay(day => ({
+          ...day,
+          dhikrCount: 0
+        }));
+      }
+
+      function cancelDhikrReset() {
+        if (dhikrResetTimerRef.current) {
+          clearTimeout(dhikrResetTimerRef.current);
+          dhikrResetTimerRef.current = null;
+        }
+        setDhikrResetArmed(false);
+      }
+
+      function startDhikrReset() {
+        cancelDhikrReset();
+        setDhikrResetArmed(true);
+        dhikrResetTimerRef.current = setTimeout(() => {
+          resetDhikrCounter();
+          navigator.vibrate?.([60, 30, 60]);
+          dhikrResetTimerRef.current = null;
+          setDhikrResetArmed(false);
+        }, 5000);
+      }
+
+      function setWorkoutValue(exerciseId, value) {
+        const reps = Math.round(nonNegative(value));
+        const nextDate = shiftDate(currentDate, 1);
+
+        setWellness(prev => {
+          const day = normalizeWellnessDay(prev.days?.[currentDate], prev.workoutDefaults);
+          const currentWorkout = normalizeWorkoutEntry(day.workouts[exerciseId]);
+          const nextDay = normalizeWellnessDay(prev.days?.[nextDate], {
+            ...prev.workoutDefaults,
+            [exerciseId]: reps
+          });
+          const nextWorkout = normalizeWorkoutEntry(nextDay.workouts[exerciseId]);
+
+          return {
+            ...prev,
+            workoutDefaults: {
+              ...(prev.workoutDefaults || {}),
+              [exerciseId]: reps
+            },
+            days: {
+              ...(prev.days || {}),
+              [currentDate]: {
+                ...day,
+                habitIds: Array.isArray(day.habitIds) ? day.habitIds : getHabitIdsForDate(prev, currentDate),
+                workouts: {
+                  ...day.workouts,
+                  [exerciseId]: {
+                    ...currentWorkout,
+                    reps
+                  }
+                }
+              },
+              [nextDate]: {
+                ...nextDay,
+                habitIds: Array.isArray(nextDay.habitIds) ? nextDay.habitIds : getHabitIdsForDate(prev, nextDate),
+                workouts: {
+                  ...nextDay.workouts,
+                  [exerciseId]: {
+                    ...nextWorkout,
+                    reps
+                  }
+                }
+              }
+            }
+          };
+        });
       }
 
       function toggleWorkoutSet(exerciseId, setIndex) {
@@ -1454,6 +1787,13 @@
         d.setDate(d.getDate() + offset);
         setCurrentDate(getLocalDateString(d));
         setEditingLogId(null);
+        cancelEditHabit();
+      }
+
+      function goToday() {
+        setCurrentDate(today);
+        setEditingLogId(null);
+        cancelEditHabit();
       }
 
       function exportBackup() {
@@ -1515,11 +1855,22 @@
               <p className="text-[10px] text-zinc-500 font-bold uppercase mt-1">Питание и ритм</p>
             </div>
 
-            <div className="text-right">
-              <div className={`text-lg font-black ${headerColor}`}>
-                {headerValue}
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <div className={`text-lg font-black ${headerColor}`}>
+                  {headerValue}
+                </div>
+                <div className="text-[9px] text-zinc-500 font-bold uppercase">{headerLabel}</div>
               </div>
-              <div className="text-[9px] text-zinc-500 font-bold uppercase">{headerLabel}</div>
+
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(true)}
+                aria-label="Настройки"
+                className="fast-touch w-10 h-10 rounded-2xl bg-[#18181b] border border-zinc-800 text-zinc-500 active:text-zinc-200 flex items-center justify-center"
+              >
+                <IconSettings className="w-5 h-5" />
+              </button>
             </div>
           </header>
 
@@ -1531,7 +1882,7 @@
                     <IconChevronLeft className="w-5 h-5" />
                   </button>
 
-                  <button type="button" aria-label="Сегодня" onClick={() => { setCurrentDate(today); setEditingLogId(null); }} className="fast-touch bg-transparent px-3 py-2">
+                  <button type="button" aria-label="Сегодня" onClick={goToday} className="fast-touch bg-transparent px-3 py-2">
                     <div className="font-bold text-sm text-zinc-200">{displayDate(currentDate)}</div>
                     <div className="text-[9px] text-zinc-600 font-bold uppercase">{currentDate}</div>
                   </button>
@@ -1671,10 +2022,10 @@
                           <div className="flex items-center gap-3 text-right">
                             <div>
                               <div className="text-emerald-400 font-bold text-sm">{log.totalCalories}</div>
-                              <div className="text-[9px] font-bold">
-                                <span className="text-indigo-400">Б {log.totalProtein}</span>
-                                <span className="text-amber-400 ml-1">Ж {log.totalFat}</span>
-                                <span className="text-sky-400 ml-1">У {log.totalCarbs}</span>
+                              <div className="text-[9px] font-bold leading-tight space-y-0.5">
+                                <div className="text-indigo-400 whitespace-nowrap">Б {log.totalProtein}</div>
+                                <div className="text-amber-400 whitespace-nowrap">Ж {log.totalFat}</div>
+                                <div className="text-sky-400 whitespace-nowrap">У {log.totalCarbs}</div>
                               </div>
                             </div>
 
@@ -1692,14 +2043,14 @@
                   ))}
                 </div>
               </div>
-            ) : activeTab === "wellness" ? (
+            ) : ["tasks", "prayers", "workouts"].includes(activeTab) ? (
               <div className="space-y-6">
                 <div className="flex items-center justify-between bg-[#18181b] rounded-2xl p-1 border border-zinc-800/50">
                   <button type="button" aria-label="Предыдущий день" onClick={() => changeDate(-1)} className="fast-touch p-3 text-zinc-400 bg-transparent active:text-zinc-200">
                     <IconChevronLeft className="w-5 h-5" />
                   </button>
 
-                  <button type="button" aria-label="Сегодня" onClick={() => { setCurrentDate(today); setEditingLogId(null); }} className="fast-touch bg-transparent px-3 py-2">
+                  <button type="button" aria-label="Сегодня" onClick={goToday} className="fast-touch bg-transparent px-3 py-2">
                     <div className="font-bold text-sm text-zinc-200">{displayDate(currentDate)}</div>
                     <div className="text-[9px] text-zinc-600 font-bold uppercase">{currentDate}</div>
                   </button>
@@ -1709,44 +2060,7 @@
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-[#18181b] rounded-2xl p-4 border border-zinc-800/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <IconFootprints className="w-5 h-5 text-sky-400" />
-                      <span className="text-[10px] text-sky-400 font-black">{Math.round(stepProgress)}%</span>
-                    </div>
-                    <div className="text-2xl font-black">{currentWellnessDay.steps}</div>
-                    <div className="text-[9px] text-zinc-500 font-bold uppercase">шагов</div>
-                  </div>
-
-                  <div className="bg-[#18181b] rounded-2xl p-4 border border-zinc-800/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <IconCheckCircle className="w-5 h-5 text-emerald-400" />
-                      <span className="text-[10px] text-emerald-400 font-black">{habitDoneCount}/{wellness.habits.length}</span>
-                    </div>
-                    <div className="text-2xl font-black">{habitDoneCount}</div>
-                    <div className="text-[9px] text-zinc-500 font-bold uppercase">дел</div>
-                  </div>
-
-                  <div className="bg-[#18181b] rounded-2xl p-4 border border-zinc-800/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <IconMoon className="w-5 h-5 text-indigo-400" />
-                      <span className="text-[10px] text-indigo-400 font-black">{prayerDoneCount}/5</span>
-                    </div>
-                    <div className="text-2xl font-black">{prayerDoneCount}</div>
-                    <div className="text-[9px] text-zinc-500 font-bold uppercase">намазов</div>
-                  </div>
-
-                  <div className="bg-[#18181b] rounded-2xl p-4 border border-zinc-800/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <IconDumbbell className="w-5 h-5 text-amber-400" />
-                      <span className="text-[10px] text-amber-400 font-black">{workoutDoneCount}/5</span>
-                    </div>
-                    <div className="text-2xl font-black">{workoutDoneCount}</div>
-                    <div className="text-[9px] text-zinc-500 font-bold uppercase">упражнений</div>
-                  </div>
-                </div>
-
+                {activeTab === "workouts" && (
                 <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-4">
                   <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
                     <IconFootprints className="w-4 h-4" /> Шаги
@@ -1785,23 +2099,25 @@
                     {currentWellnessDay.steps >= wellness.stepGoal ? "Цель выполнена" : `${Math.max(0, wellness.stepGoal - currentWellnessDay.steps)} шагов до цели`}
                   </div>
                 </div>
+                )}
 
+                {activeTab === "tasks" && (
                 <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
                       <IconCheckCircle className="w-4 h-4" /> Напоминания
                     </h2>
-                    <span className="text-[10px] text-emerald-400 font-black">{habitDoneCount}/{wellness.habits.length}</span>
+                    <span className="text-[10px] text-emerald-400 font-black">{habitDoneCount}/{visibleHabits.length}</span>
                   </div>
 
-                  <div className="h-[176px] overflow-y-auto overflow-x-hidden space-y-2 pr-1 app-scroll">
-                    {wellness.habits.length === 0 && (
+                  <div className="space-y-2">
+                    {visibleHabits.length === 0 && (
                       <div className="bg-[#27272a] rounded-2xl p-4 text-center text-zinc-500 text-sm">
                         На сегодня ничего нет
                       </div>
                     )}
 
-                    {wellness.habits.map((habit) => {
+                    {visibleHabits.map((habit) => {
                       const done = currentWellnessDay.habits[habit.id];
                       const editingThisHabit = editingHabitId === habit.id;
                       const draggingThisHabit = draggedHabitId === habit.id;
@@ -1846,10 +2162,6 @@
                               <button
                                 type="button"
                                 onPointerDown={(event) => handleHabitPointerDown(event, habit.id)}
-                                onPointerMove={handleHabitPointerMove}
-                                onPointerUp={handleHabitPointerUp}
-                                onPointerCancel={stopHabitDragging}
-                                onLostPointerCapture={stopHabitDragging}
                                 aria-label={`Перетащить напоминание ${habit.name}`}
                                 className="fast-touch touch-none cursor-grab active:cursor-grabbing text-zinc-600 active:text-zinc-200 p-2 bg-transparent"
                               >
@@ -1879,7 +2191,10 @@
                     </button>
                   </form>
                 </div>
+                )}
 
+                {activeTab === "prayers" && (
+                <>
                 <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
@@ -1932,6 +2247,47 @@
                   </div>
                 </div>
 
+                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                      <IconActivity className="w-4 h-4" /> Счетчик зикра
+                    </h2>
+                    <span className="text-[10px] text-sky-400 font-black">33 / 66 / 99</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={incrementDhikrCounter}
+                    aria-label="Добавить один зикр"
+                    className="fast-touch w-full min-h-[148px] rounded-3xl bg-sky-500/15 border border-sky-500/30 active:bg-sky-500/25 active:scale-[0.99] transition-all flex flex-col items-center justify-center"
+                  >
+                    <div className="text-6xl font-black text-sky-300 leading-none">{currentWellnessDay.dhikrCount}</div>
+                    <div className="text-[10px] text-sky-500 font-black uppercase mt-3">нажми</div>
+                  </button>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {[33, 66, 99].map(mark => (
+                      <div key={mark} className={`rounded-xl p-2 text-center border ${currentWellnessDay.dhikrCount >= mark ? "bg-sky-500/20 border-sky-500/40 text-sky-300" : "bg-[#27272a] border-zinc-800 text-zinc-600"}`}>
+                        <div className="text-sm font-black">{mark}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onPointerDown={startDhikrReset}
+                    onPointerUp={cancelDhikrReset}
+                    onPointerCancel={cancelDhikrReset}
+                    aria-label="Сбросить счетчик зикра удержанием пять секунд"
+                    className={`fast-touch w-full rounded-xl p-3 text-sm font-bold transition-all ${dhikrResetArmed ? "bg-rose-500/25 text-rose-200 border border-rose-500/40" : "bg-[#27272a] text-zinc-400 border border-zinc-800"}`}
+                  >
+                    {dhikrResetArmed ? "Держи 5 секунд..." : "Сброс: удерживать 5 сек"}
+                  </button>
+                </div>
+                </>
+                )}
+
+                {activeTab === "workouts" && (
                 <div className="bg-[#18181b] rounded-3xl p-4 border border-zinc-800/50 space-y-3">
                   <div className="flex items-center justify-between">
                     <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
@@ -1949,7 +2305,7 @@
 
                       return (
                         <div key={exercise.id} className={`rounded-2xl p-2 border ${setCount ? "bg-amber-500/10 border-amber-500/30" : "bg-[#27272a] border-zinc-800/50"}`}>
-                          <div className="grid grid-cols-[minmax(0,1fr)_62px_auto_42px] gap-2 items-center">
+                          <div className="grid grid-cols-[minmax(0,1fr)_58px_auto_44px] gap-1.5 items-center">
                             <div className="min-w-0">
                               <div className="font-bold text-sm leading-tight truncate">{exercise.label}</div>
                               <div className="text-[9px] text-zinc-500 font-bold uppercase mt-0.5 truncate">{exercise.unit}/подх.</div>
@@ -1966,7 +2322,7 @@
                               aria-label={`${exercise.label} в одном подходе`}
                             />
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                               {[0, 1, 2].map(setIndex => {
                                 const checked = workout.sets[setIndex];
 
@@ -1976,7 +2332,7 @@
                                     type="button"
                                     onClick={() => toggleWorkoutSet(exercise.id, setIndex)}
                                     aria-label={`${exercise.label}, подход ${setIndex + 1}`}
-                                    className={`fast-touch w-8 h-8 rounded-full border flex items-center justify-center transition-all ${checked ? "bg-amber-500 border-amber-400 text-white" : "bg-zinc-900 border-zinc-800 text-zinc-700"}`}
+                                    className={`fast-touch w-10 h-10 rounded-full border flex items-center justify-center transition-all ${checked ? "bg-amber-500 border-amber-400 text-white" : "bg-zinc-900 border-zinc-800 text-zinc-700"}`}
                                   >
                                     {checked ? <IconCheckCircle className="w-4 h-4" /> : <span className="text-[10px] font-black">{setIndex + 1}</span>}
                                   </button>
@@ -1994,6 +2350,7 @@
                     })}
                   </div>
                 </div>
+                )}
               </div>
             ) : (
               <div className="space-y-6">
@@ -2138,22 +2495,6 @@
                   ))}
                 </div>
 
-                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
-                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                    <IconDownload className="w-4 h-4" /> Backup
-                  </h2>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <button type="button" onClick={exportBackup} className="fast-touch bg-emerald-600 active:bg-emerald-700 text-white rounded-xl p-4 font-bold transition-transform active:scale-95">
-                      Скачать
-                    </button>
-
-                    <label className="block fast-touch bg-[#27272a] active:bg-zinc-700 text-white rounded-xl p-4 font-bold text-center transition-transform active:scale-95">
-                      Загрузить
-                      <input type="file" accept="application/json" className="hidden" onChange={importBackup} />
-                    </label>
-                  </div>
-                </div>
               </div>
             )}
           </main>
@@ -2178,20 +2519,69 @@
             );
           })()}
 
+          {settingsOpen && (
+            <div
+              className="fixed inset-0 z-[90] bg-black/70 flex items-end justify-center px-4 pb-4"
+              onClick={() => setSettingsOpen(false)}
+            >
+              <div
+                className="w-full max-w-md bg-[#18181b] border border-zinc-800 rounded-3xl p-5 shadow-2xl space-y-4"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-base font-black">Настройки</h2>
+                    <p className="text-[10px] text-zinc-500 font-bold uppercase mt-1">Backup данных</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSettingsOpen(false)}
+                    aria-label="Закрыть настройки"
+                    className="fast-touch w-10 h-10 rounded-2xl bg-[#27272a] text-zinc-500 active:text-zinc-200 flex items-center justify-center"
+                  >
+                    <IconX className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" onClick={exportBackup} className="fast-touch bg-emerald-600 active:bg-emerald-700 text-white rounded-xl p-4 font-bold transition-transform active:scale-95">
+                    Скачать
+                  </button>
+
+                  <label className="block fast-touch bg-[#27272a] active:bg-zinc-700 text-white rounded-xl p-4 font-bold text-center transition-transform active:scale-95">
+                    Загрузить
+                    <input type="file" accept="application/json" className="hidden" onChange={importBackup} />
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
           <nav className="bottom-nav fixed left-1/2 bottom-0 -translate-x-1/2 w-full max-w-md bg-[#18181b] border-t border-zinc-800 flex justify-around pt-2 nav-safe z-50">
-            <button type="button" onClick={() => switchTab("diary")} className={`fast-touch flex-1 flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "diary" ? "text-emerald-400" : "text-zinc-600 active:text-zinc-400"}`}>
-              <IconCalendar className="w-6 h-6" />
-              <span className="text-[9px] font-bold mt-1 uppercase">Дневник</span>
+            <button type="button" onClick={() => switchTab("diary")} className={`fast-touch flex-1 flex flex-col items-center py-1.5 transition-all bg-transparent ${activeTab === "diary" ? "text-emerald-400" : "text-zinc-600 active:text-zinc-400"}`}>
+              <IconCalendar className="w-5 h-5" />
+              <span className="text-[8px] font-bold mt-1 uppercase">Дневник</span>
             </button>
 
-            <button type="button" onClick={() => switchTab("wellness")} className={`fast-touch flex-1 flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "wellness" ? "text-sky-400" : "text-zinc-600 active:text-zinc-400"}`}>
-              <IconActivity className="w-6 h-6" />
-              <span className="text-[9px] font-bold mt-1 uppercase">Ритм</span>
+            <button type="button" onClick={() => switchTab("tasks")} className={`fast-touch flex-1 flex flex-col items-center py-1.5 transition-all bg-transparent ${activeTab === "tasks" ? "text-emerald-400" : "text-zinc-600 active:text-zinc-400"}`}>
+              <IconCheckCircle className="w-5 h-5" />
+              <span className="text-[8px] font-bold mt-1 uppercase">Дела</span>
             </button>
 
-            <button type="button" onClick={() => switchTab("directory")} className={`fast-touch flex-1 flex flex-col items-center py-2 transition-all bg-transparent ${activeTab === "directory" ? "text-indigo-400" : "text-zinc-600 active:text-zinc-400"}`}>
-              <IconBook className="w-6 h-6" />
-              <span className="text-[9px] font-bold mt-1 uppercase">База</span>
+            <button type="button" onClick={() => switchTab("prayers")} className={`fast-touch flex-1 flex flex-col items-center py-1.5 transition-all bg-transparent ${activeTab === "prayers" ? "text-indigo-400" : "text-zinc-600 active:text-zinc-400"}`}>
+              <IconMoon className="w-5 h-5" />
+              <span className="text-[8px] font-bold mt-1 uppercase">Намаз</span>
+            </button>
+
+            <button type="button" onClick={() => switchTab("workouts")} className={`fast-touch flex-1 flex flex-col items-center py-1.5 transition-all bg-transparent ${activeTab === "workouts" ? "text-amber-400" : "text-zinc-600 active:text-zinc-400"}`}>
+              <IconDumbbell className="w-5 h-5" />
+              <span className="text-[8px] font-bold mt-1 uppercase">Трен.</span>
+            </button>
+
+            <button type="button" onClick={() => switchTab("directory")} className={`fast-touch flex-1 flex flex-col items-center py-1.5 transition-all bg-transparent ${activeTab === "directory" ? "text-indigo-400" : "text-zinc-600 active:text-zinc-400"}`}>
+              <IconBook className="w-5 h-5" />
+              <span className="text-[8px] font-bold mt-1 uppercase">База</span>
             </button>
           </nav>
         </div>
