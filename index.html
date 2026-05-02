@@ -95,21 +95,6 @@
 
     .reminder-card {
       transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.18s ease, border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
-      will-change: transform;
-    }
-
-    .reminder-card-ghost {
-      opacity: 0.18;
-      pointer-events: none;
-      transform: scale(0.98);
-    }
-
-    .reminder-drag-preview {
-      position: fixed;
-      z-index: 80;
-      pointer-events: none;
-      transform: scale(1.035) rotate(-1deg);
-      box-shadow: 0 22px 46px rgba(0, 0, 0, 0.42);
     }
 
     .fast-touch { touch-action: manipulation; }
@@ -241,6 +226,8 @@
     const IconCalendar = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>;
     const IconChevronLeft = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>;
     const IconChevronRight = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>;
+    const IconChevronUp = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>;
+    const IconChevronDown = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>;
     const IconGripVertical = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>;
     const IconTrash = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"/></svg>;
     const IconTarget = ({className}) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
@@ -586,7 +573,7 @@
 
       return {
         steps: Math.round(nonNegative(value.steps)),
-        dhikrCount: Math.round(nonNegative(value.dhikrCount ?? value.zikrCount ?? value.suohazhCount)),
+        dhikrCount: Math.min(99, Math.round(nonNegative(value.dhikrCount ?? value.zikrCount ?? value.suohazhCount))),
         habitIds: normalizeHabitIds(value.habitIds),
         habits,
         prayers: normalizePrayers(value.prayers),
@@ -1017,8 +1004,6 @@
 
     function App() {
       const mainRef = useRef(null);
-      const draggedHabitRef = useRef(null);
-      const habitItemRefs = useRef({});
       const dhikrResetTimerRef = useRef(null);
       const dhikrFlashTimerRef = useRef(null);
 
@@ -1043,10 +1028,9 @@
       const [newHabitName, setNewHabitName] = useState("");
       const [editingHabitId, setEditingHabitId] = useState(null);
       const [editingHabitName, setEditingHabitName] = useState("");
-      const [draggedHabitId, setDraggedHabitId] = useState(null);
-      const [dragPreview, setDragPreview] = useState(null);
       const [dhikrResetArmed, setDhikrResetArmed] = useState(false);
       const [dhikrFlash, setDhikrFlash] = useState(null);
+      const [plankTimer, setPlankTimer] = useState({ running: false, remaining: 0, total: 0 });
 
       useEffect(() => safeSave(STORAGE.goals, goals), [goals]);
       useEffect(() => safeSave(STORAGE.foods, foods), [foods]);
@@ -1063,6 +1047,28 @@
       }, [activeTab]);
 
       useEffect(() => {
+        if (!plankTimer.running) return undefined;
+
+        const timer = setInterval(() => {
+          setPlankTimer(prev => {
+            if (!prev.running) return prev;
+
+            if (prev.remaining <= 1) {
+              setTimeout(() => {
+                vibrateDhikr([220, 80, 220, 80, 300]);
+                playDhikrTone([988, 784, 988, 784]);
+              }, 0);
+              return { ...prev, running: false, remaining: 0 };
+            }
+
+            return { ...prev, remaining: prev.remaining - 1 };
+          });
+        }, 1000);
+
+        return () => clearInterval(timer);
+      }, [plankTimer.running]);
+
+      useEffect(() => {
         setWellness(prev => {
           const day = normalizeWellnessDay(prev.days?.[currentDate], prev.workoutDefaults);
           const nextHabitIds = getHabitIdsForDate(prev, currentDate);
@@ -1071,24 +1077,6 @@
           return setDayHabitIds(prev, currentDate, nextHabitIds);
         });
       }, [currentDate]);
-
-      useEffect(() => {
-        if (!draggedHabitId) return undefined;
-
-        const move = (event) => handleHabitPointerMove(event);
-        const up = (event) => handleHabitPointerUp(event);
-        const cancel = () => stopHabitDragging();
-
-        window.addEventListener("pointermove", move, { passive: false });
-        window.addEventListener("pointerup", up);
-        window.addEventListener("pointercancel", cancel);
-
-        return () => {
-          window.removeEventListener("pointermove", move);
-          window.removeEventListener("pointerup", up);
-          window.removeEventListener("pointercancel", cancel);
-        };
-      }, [draggedHabitId]);
 
       const currentDayLogs = dailyLogs[currentDate] || [];
       const currentWellnessDay = useMemo(() => normalizeWellnessDay(wellness.days?.[currentDate], wellness.workoutDefaults), [wellness.days, wellness.workoutDefaults, currentDate]);
@@ -1161,7 +1149,7 @@
           color: "text-amber-400"
         },
         directory: {
-          title: "База и цели",
+          title: "База",
           value: foods.length,
           label: "продуктов",
           color: "text-indigo-400"
@@ -1345,6 +1333,25 @@
         });
       }
 
+      async function pasteProductFromClipboard() {
+        if (!navigator.clipboard?.readText) {
+          alert("Браузер не дал доступ к буферу обмена. Вставь текст вручную.");
+          return;
+        }
+
+        try {
+          const text = await navigator.clipboard.readText();
+          if (!text.trim()) {
+            alert("Буфер обмена пуст.");
+            return;
+          }
+
+          setPasteText(text);
+        } catch {
+          alert("Не получилось прочитать буфер обмена. Разреши доступ или вставь текст вручную.");
+        }
+      }
+
       function startEditFood(food) {
         setEditingFoodId(food.id);
         setEditingFood({ ...food });
@@ -1526,124 +1533,20 @@
         });
       }
 
-      function getHabitRects() {
-        return Object.fromEntries(
-          Object.entries(habitItemRefs.current)
-            .filter(([, element]) => element)
-            .map(([id, element]) => [id, element.getBoundingClientRect()])
-        );
-      }
-
-      function animateHabitLayout(previousRects) {
-        requestAnimationFrame(() => {
-          Object.entries(habitItemRefs.current).forEach(([id, element]) => {
-            const previous = previousRects[id];
-            if (!previous || !element || id === draggedHabitRef.current) return;
-
-            const next = element.getBoundingClientRect();
-            const deltaY = previous.top - next.top;
-            if (Math.abs(deltaY) < 1) return;
-
-            element.getAnimations?.().forEach(animation => animation.cancel());
-            element.animate(
-              [
-                { transform: `translateY(${deltaY}px)` },
-                { transform: "translateY(0)" }
-              ],
-              { duration: 190, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }
-            );
-          });
-        });
-      }
-
-      function moveHabitToTarget(draggedId, targetId, placeAfter = false) {
-        if (!draggedId || !targetId || draggedId === targetId) return;
-
-        const previousRects = getHabitRects();
-
+      function moveHabitByOffset(habitId, offset) {
         setWellness(prev => {
-          const habits = getHabitIdsForDate(prev, currentDate);
-          const currentIndex = habits.findIndex(id => id === draggedId);
-          const targetIndex = habits.findIndex(id => id === targetId);
+          const ids = getHabitIdsForDate(prev, currentDate);
+          const currentIndex = ids.indexOf(habitId);
+          const nextIndex = currentIndex + offset;
 
-          if (currentIndex < 0 || targetIndex < 0) return prev;
+          if (currentIndex < 0 || nextIndex < 0 || nextIndex >= ids.length) return prev;
 
-          const nextHabits = [...habits];
-          const [habit] = nextHabits.splice(currentIndex, 1);
-          const targetIndexAfterRemoval = nextHabits.findIndex(id => id === targetId);
-          const nextIndex = targetIndexAfterRemoval + (placeAfter ? 1 : 0);
+          const nextIds = [...ids];
+          const [habit] = nextIds.splice(currentIndex, 1);
+          nextIds.splice(nextIndex, 0, habit);
 
-          nextHabits.splice(nextIndex, 0, habit);
-
-          return setDayHabitIds(prev, currentDate, nextHabits);
+          return setDayHabitIds(prev, currentDate, nextIds);
         });
-
-        animateHabitLayout(previousRects);
-      }
-
-      function setHabitDragging(habitId, event) {
-        const card = event.currentTarget.closest("[data-reminder-id]");
-        const rect = card?.getBoundingClientRect();
-
-        draggedHabitRef.current = habitId;
-        setDraggedHabitId(habitId);
-
-        if (rect) {
-          setDragPreview({
-            id: habitId,
-            x: rect.left,
-            y: rect.top,
-            width: rect.width,
-            offsetX: event.clientX - rect.left,
-            offsetY: event.clientY - rect.top
-          });
-        }
-      }
-
-      function stopHabitDragging() {
-        draggedHabitRef.current = null;
-        setDraggedHabitId(null);
-        setDragPreview(null);
-      }
-
-      function handleHabitPointerDown(event, habitId) {
-        event.preventDefault();
-        setHabitDragging(habitId, event);
-      }
-
-      function handleHabitPointerMove(event) {
-        const draggedId = draggedHabitRef.current;
-        if (!draggedId) return;
-        if (event.cancelable) event.preventDefault();
-
-        setDragPreview(prev => prev ? {
-          ...prev,
-          x: event.clientX - prev.offsetX,
-          y: event.clientY - prev.offsetY
-        } : prev);
-
-        const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-reminder-id]");
-        const targetId = target?.getAttribute("data-reminder-id");
-
-        if (!target || !targetId || targetId === draggedId) return;
-
-        const rect = target.getBoundingClientRect();
-        const placeAfter = event.clientY > rect.top + rect.height / 2;
-        moveHabitToTarget(draggedId, targetId, placeAfter);
-      }
-
-      function handleHabitPointerUp(event) {
-        const draggedId = draggedHabitRef.current;
-        const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-reminder-id]");
-        const targetId = target?.getAttribute("data-reminder-id");
-
-        if (draggedId && targetId) {
-          const rect = target.getBoundingClientRect();
-          const placeAfter = event.clientY > rect.top + rect.height / 2;
-          moveHabitToTarget(draggedId, targetId, placeAfter);
-        }
-
-        stopHabitDragging();
       }
 
       function deleteHabit(habitId) {
@@ -1756,7 +1659,9 @@
       }
 
       function incrementDhikrCounter() {
-        const nextCount = currentWellnessDay.dhikrCount + 1;
+        if (currentWellnessDay.dhikrCount >= 99) return;
+
+        const nextCount = Math.min(99, currentWellnessDay.dhikrCount + 1);
 
         updateWellnessDay(day => ({
           ...day,
@@ -1791,7 +1696,32 @@
           playDhikrTone([520, 420]);
           dhikrResetTimerRef.current = null;
           setDhikrResetArmed(false);
-        }, 5000);
+        }, 3000);
+      }
+
+      function startPlankTimer() {
+        const plankSeconds = Math.round(nonNegative(normalizeWorkoutEntry(currentWellnessDay.workouts.plank).reps));
+
+        if (plankSeconds <= 0) {
+          alert("Сначала укажи секунды в планке.");
+          return;
+        }
+
+        setPlankTimer(prev => {
+          if (prev.total > 0 && prev.remaining > 0 && !prev.running) {
+            return { ...prev, running: true };
+          }
+
+          return { running: true, remaining: plankSeconds, total: plankSeconds };
+        });
+      }
+
+      function stopPlankTimer() {
+        setPlankTimer(prev => ({ ...prev, running: false }));
+      }
+
+      function resetPlankTimer() {
+        setPlankTimer({ running: false, remaining: 0, total: 0 });
       }
 
       function setWorkoutValue(exerciseId, value) {
@@ -2196,20 +2126,14 @@
                       </div>
                     )}
 
-                    {visibleHabits.map((habit) => {
+                    {visibleHabits.map((habit, habitIndex) => {
                       const done = currentWellnessDay.habits[habit.id];
                       const editingThisHabit = editingHabitId === habit.id;
-                      const draggingThisHabit = draggedHabitId === habit.id;
 
                       return (
                         <div
                           key={habit.id}
-                          ref={(node) => {
-                            if (node) habitItemRefs.current[habit.id] = node;
-                            else delete habitItemRefs.current[habit.id];
-                          }}
-                          data-reminder-id={habit.id}
-                          className={`reminder-card flex items-center gap-2 rounded-2xl border p-2 ${draggingThisHabit ? "reminder-card-ghost" : ""} ${done ? "bg-emerald-500/10 border-emerald-500/30" : "bg-[#27272a] border-zinc-800/50"}`}
+                          className={`reminder-card flex items-start gap-2 rounded-2xl border p-2 ${done ? "bg-emerald-500/10 border-emerald-500/30" : "bg-[#27272a] border-zinc-800/50"}`}
                         >
                           {editingThisHabit ? (
                             <div className="flex-1 min-w-0 space-y-2">
@@ -2227,29 +2151,44 @@
                             </div>
                           ) : (
                             <>
-                              <button type="button" onClick={() => toggleHabit(habit.id)} className="fast-touch flex-1 flex items-center gap-3 min-w-0 bg-transparent text-left">
-                                <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${done ? "bg-emerald-500 text-white" : "bg-zinc-900 text-zinc-600"}`}>
+                              <button type="button" onClick={() => toggleHabit(habit.id)} className="fast-touch flex-1 flex items-start gap-3 min-w-0 bg-transparent text-left py-1">
+                                <span className={`w-8 h-8 mt-0.5 rounded-full flex items-center justify-center shrink-0 ${done ? "bg-emerald-500 text-white" : "bg-zinc-900 text-zinc-600"}`}>
                                   {done ? <IconCheckCircle className="w-5 h-5" /> : <span className="w-2 h-2 rounded-full bg-zinc-600" />}
                                 </span>
-                                <span className={`text-sm font-bold truncate ${done ? "text-emerald-100" : "text-zinc-200"}`}>{habit.name}</span>
+                                <span className={`text-sm font-bold leading-snug whitespace-normal break-words min-w-0 ${done ? "text-emerald-100" : "text-zinc-200"}`}>{habit.name}</span>
                               </button>
 
-                              <button type="button" onClick={() => startEditHabit(habit)} aria-label={`Редактировать напоминание ${habit.name}`} className="fast-touch text-zinc-600 active:text-indigo-400 p-2 bg-transparent">
-                                <IconEdit className="w-4 h-4" />
-                              </button>
+                              <div className="flex items-start gap-1 shrink-0">
+                                <button type="button" onClick={() => startEditHabit(habit)} aria-label={`Редактировать напоминание ${habit.name}`} className="fast-touch text-zinc-600 active:text-indigo-400 p-2 bg-transparent">
+                                  <IconEdit className="w-4 h-4" />
+                                </button>
 
-                              <button
-                                type="button"
-                                onPointerDown={(event) => handleHabitPointerDown(event, habit.id)}
-                                aria-label={`Перетащить напоминание ${habit.name}`}
-                                className="fast-touch touch-none cursor-grab active:cursor-grabbing text-zinc-600 active:text-zinc-200 p-2 bg-transparent"
-                              >
-                                <IconGripVertical className="w-5 h-5" />
-                              </button>
+                                <div className="flex flex-col gap-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => moveHabitByOffset(habit.id, -1)}
+                                    disabled={habitIndex === 0}
+                                    aria-label={`Поднять напоминание ${habit.name}`}
+                                    className={`fast-touch p-0.5 bg-transparent ${habitIndex === 0 ? "text-zinc-800" : "text-zinc-600 active:text-zinc-200"}`}
+                                  >
+                                    <IconChevronUp className="w-4 h-4" />
+                                  </button>
 
-                              <button type="button" onClick={() => deleteHabit(habit.id)} aria-label={`Удалить напоминание ${habit.name}`} className="fast-touch text-zinc-700 active:text-red-400 p-2 bg-transparent">
-                                <IconTrash className="w-5 h-5" />
-                              </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => moveHabitByOffset(habit.id, 1)}
+                                    disabled={habitIndex === visibleHabits.length - 1}
+                                    aria-label={`Опустить напоминание ${habit.name}`}
+                                    className={`fast-touch p-0.5 bg-transparent ${habitIndex === visibleHabits.length - 1 ? "text-zinc-800" : "text-zinc-600 active:text-zinc-200"}`}
+                                  >
+                                    <IconChevronDown className="w-4 h-4" />
+                                  </button>
+                                </div>
+
+                                <button type="button" onClick={() => deleteHabit(habit.id)} aria-label={`Удалить напоминание ${habit.name}`} className="fast-touch text-zinc-700 active:text-red-400 p-2 bg-transparent">
+                                  <IconTrash className="w-5 h-5" />
+                                </button>
+                              </div>
                             </>
                           )}
                         </div>
@@ -2360,16 +2299,17 @@
                     onPointerCancel={cancelDhikrReset}
                     onPointerLeave={cancelDhikrReset}
                     onContextMenu={(event) => event.preventDefault()}
-                    aria-label="Сбросить счетчик зикра удержанием пять секунд"
+                    aria-label="Сбросить счетчик зикра удержанием три секунды"
                     className={`fast-touch no-callout w-full rounded-xl p-3 text-sm font-bold transition-all ${dhikrResetArmed ? "bg-rose-500/25 text-rose-200 border border-rose-500/40" : "bg-[#27272a] text-zinc-400 border border-zinc-800"}`}
                   >
-                    {dhikrResetArmed ? "Держи 5 секунд..." : "Сброс: удерживать 5 сек"}
+                    {dhikrResetArmed ? "Держи 3 секунды..." : "Сброс: удерживать 3 сек"}
                   </button>
                 </div>
                 </>
                 )}
 
                 {activeTab === "workouts" && (
+                <>
                 <div className="bg-[#18181b] rounded-3xl p-4 border border-zinc-800/50 space-y-3">
                   <div className="flex items-center justify-between">
                     <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
@@ -2432,6 +2372,48 @@
                     })}
                   </div>
                 </div>
+                {(() => {
+                  const plankSeconds = Math.round(nonNegative(normalizeWorkoutEntry(currentWellnessDay.workouts.plank).reps));
+                  const timerValue = plankTimer.running || plankTimer.total ? plankTimer.remaining : plankSeconds;
+                  const timerProgress = plankTimer.total ? pct(plankTimer.total - plankTimer.remaining, plankTimer.total) : 0;
+
+                  return (
+                    <div className="bg-[#18181b] rounded-3xl p-4 border border-zinc-800/50 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                          <IconActivity className="w-4 h-4" /> Таймер планки
+                        </h2>
+                        <span className="text-[10px] text-amber-400 font-black">{plankSeconds} сек</span>
+                      </div>
+
+                      <div className="rounded-3xl bg-[#27272a] border border-zinc-800/50 p-4 text-center">
+                        <div className={`text-5xl font-black leading-none ${plankTimer.running ? "text-amber-300" : "text-zinc-200"}`}>{timerValue}</div>
+                        <div className="text-[10px] text-zinc-500 font-black uppercase mt-2">{plankTimer.running ? "идет таймер" : "секунд"}</div>
+                      </div>
+
+                      <ProgressBar value={timerProgress} color="amber" />
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={plankTimer.running ? stopPlankTimer : startPlankTimer}
+                          className="fast-touch bg-amber-500 active:bg-amber-600 text-zinc-950 rounded-xl p-3 font-black transition-transform active:scale-95"
+                        >
+                          {plankTimer.running ? "Пауза" : "Старт"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={resetPlankTimer}
+                          className="fast-touch bg-[#27272a] active:bg-zinc-700 text-zinc-200 rounded-xl p-3 font-bold transition-transform active:scale-95"
+                        >
+                          Сброс
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+                </>
                 )}
               </div>
             ) : (
@@ -2470,19 +2452,6 @@
                   />
                 </div>
 
-                <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50">
-                  <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <IconTarget className="w-4 h-4" /> Дневные цели
-                  </h2>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <InputBox label="ККАЛ" value={goals.calories} color="text-emerald-400" setValue={(v) => setGoals({...goals, calories: v})} />
-                    <InputBox label="БЕЛКИ" value={goals.protein} color="text-indigo-400" setValue={(v) => setGoals({...goals, protein: v})} />
-                    <InputBox label="ЖИРЫ" value={goals.fat} color="text-amber-400" setValue={(v) => setGoals({...goals, fat: v})} />
-                    <InputBox label="УГЛЕВОДЫ" value={goals.carbs} color="text-sky-400" setValue={(v) => setGoals({...goals, carbs: v})} />
-                  </div>
-                </div>
-
                 <div className="bg-[#18181b] rounded-3xl p-5 border border-zinc-800/50 space-y-3">
                   <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
                     <IconDownload className="w-4 h-4" /> Импорт продукта
@@ -2495,12 +2464,16 @@
                     onChange={(e) => setPasteText(e.target.value)}
                   />
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <button type="button" onClick={fillProductFromPaste} className="fast-touch bg-[#27272a] active:bg-zinc-700 text-white rounded-xl p-3 font-bold">
+                  <div className="grid grid-cols-3 gap-2">
+                    <button type="button" onClick={pasteProductFromClipboard} className="fast-touch bg-sky-600 active:bg-sky-700 text-white rounded-xl p-3 text-[11px] leading-tight font-bold">
+                      Из буфера
+                    </button>
+
+                    <button type="button" onClick={fillProductFromPaste} className="fast-touch bg-[#27272a] active:bg-zinc-700 text-white rounded-xl p-3 text-[11px] leading-tight font-bold">
                       Заполнить поля
                     </button>
 
-                    <button type="button" onClick={addProductFromPaste} className="fast-touch bg-emerald-600 active:bg-emerald-700 text-white rounded-xl p-3 font-bold">
+                    <button type="button" onClick={addProductFromPaste} className="fast-touch bg-emerald-600 active:bg-emerald-700 text-white rounded-xl p-3 text-[11px] leading-tight font-bold">
                       Добавить сразу
                     </button>
                   </div>
@@ -2581,26 +2554,6 @@
             )}
           </main>
 
-          {dragPreview && (() => {
-            const habit = wellness.habits.find(item => item.id === dragPreview.id);
-            if (!habit) return null;
-
-            const done = currentWellnessDay.habits[habit.id];
-
-            return (
-              <div
-                className={`reminder-drag-preview flex items-center gap-2 rounded-2xl border p-2 ${done ? "bg-[#123226] border-emerald-500/50" : "bg-[#2f2f33] border-zinc-700"}`}
-                style={{ left: dragPreview.x, top: dragPreview.y, width: dragPreview.width }}
-              >
-                <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${done ? "bg-emerald-500 text-white" : "bg-zinc-900 text-zinc-600"}`}>
-                  {done ? <IconCheckCircle className="w-5 h-5" /> : <span className="w-2 h-2 rounded-full bg-zinc-600" />}
-                </span>
-                <span className={`text-sm font-bold truncate flex-1 min-w-0 ${done ? "text-emerald-100" : "text-zinc-100"}`}>{habit.name}</span>
-                <IconGripVertical className="w-5 h-5 text-zinc-500 shrink-0" />
-              </div>
-            );
-          })()}
-
           {dhikrFlash && (
             <div key={dhikrFlash.id} className="dhikr-flash-overlay" aria-hidden="true" />
           )}
@@ -2611,13 +2564,13 @@
               onClick={() => setSettingsOpen(false)}
             >
               <div
-                className="w-full max-w-md bg-[#18181b] border border-zinc-800 rounded-3xl p-5 shadow-2xl space-y-4"
+                className="w-full max-w-md max-h-[85vh] overflow-y-auto app-scroll bg-[#18181b] border border-zinc-800 rounded-3xl p-5 shadow-2xl space-y-4"
                 onClick={(event) => event.stopPropagation()}
               >
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-base font-black">Настройки</h2>
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase mt-1">Backup данных</p>
+                    <p className="text-[10px] text-zinc-500 font-bold uppercase mt-1">Цели и backup</p>
                   </div>
 
                   <button
@@ -2628,6 +2581,19 @@
                   >
                     <IconX className="w-5 h-5" />
                   </button>
+                </div>
+
+                <div className="bg-[#09090b] rounded-2xl p-4 border border-zinc-800/60 space-y-3">
+                  <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                    <IconTarget className="w-4 h-4" /> Дневные цели
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <InputBox label="ККАЛ" value={goals.calories} color="text-emerald-400" setValue={(v) => setGoals({...goals, calories: v})} />
+                    <InputBox label="БЕЛКИ" value={goals.protein} color="text-indigo-400" setValue={(v) => setGoals({...goals, protein: v})} />
+                    <InputBox label="ЖИРЫ" value={goals.fat} color="text-amber-400" setValue={(v) => setGoals({...goals, fat: v})} />
+                    <InputBox label="УГЛЕВОДЫ" value={goals.carbs} color="text-sky-400" setValue={(v) => setGoals({...goals, carbs: v})} />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
