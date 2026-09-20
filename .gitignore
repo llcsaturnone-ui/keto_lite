@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.tar.gz
+*.zip
+/Дневник-питания.html
+.DS_Store
