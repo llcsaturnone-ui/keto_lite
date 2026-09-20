@@ -38,3 +38,24 @@ test('quota failure does not pretend an edit was saved', () => {
   assert.throws(() => store.commit('foods', [food('A')]), /не применено/);
   assert.ok(!store.read().foods.some(f => f.id === 'A'));
 });
+
+test('a meal is atomic on validation and storage failure and survives later edits', () => {
+  const storage = memory(), store = createStore(storage), date = '2026-09-20';
+  const log = id => ({ id, foodId: id, foodName: id, grams: 100,
+    totalCalories: 100, totalProtein: 10, totalFat: 2, totalCarbs: 4,
+    nutritionPer100: { calories: 100, protein: 10, fat: 2, carbs: 4 } });
+  const before = store.read();
+  assert.throws(() => store.commit('logs', { date, logs: [log('A'), { ...log('B'), grams: 0 }] }));
+  assert.deepEqual(store.read(), before);
+  const original = storage.setItem;
+  storage.setItem = (key, value) => { if (key.startsWith(EVENT_PREFIX)) throw new Error('quota'); original(key, value); };
+  assert.throws(() => store.commit('logs', { date, logs: [log('A'), log('B')] }), /не применено/);
+  assert.deepEqual(store.read(), before);
+  storage.setItem = original;
+  store.commit('logs', { date, logs: [log('A'), log('B')] });
+  const anotherTab = createStore(storage);
+  anotherTab.commit('log', { date, log: { ...log('A'), grams: 150, totalCalories: 150, totalProtein: 15, totalFat: 3, totalCarbs: 6 } });
+  assert.deepEqual(store.read().dailyLogs[date].map(item => [item.id, item.grams]), [['A', 150], ['B', 100]]);
+  anotherTab.commit('deleteLog', { date, id: 'B' });
+  assert.equal(store.read().dailyLogs[date].length, 1);
+});

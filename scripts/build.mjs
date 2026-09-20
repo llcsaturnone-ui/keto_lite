@@ -19,7 +19,7 @@ const web = await build({ entryPoints: { app: path.join(root, 'src/App.jsx'), ve
   minify: true, legalComments: 'inline', charset: 'utf8', target: ['es2020'],
   entryNames: '[name]-[hash]', chunkNames: 'shared-[hash]', define: { 'process.env.NODE_ENV': '"production"' } });
 const appFile = web.outputFiles.find(file => path.basename(file.path).startsWith('app-'));
-await rm(path.join(root, 'assets'), { recursive: true, force: true });
+// Keep previously published hashed modules available for cached pages during updates.
 await rm(path.join(root, 'dist/assets'), { recursive: true, force: true });
 await mkdir(path.join(root, 'assets'), { recursive: true });
 await mkdir(path.join(root, 'dist/assets'), { recursive: true });

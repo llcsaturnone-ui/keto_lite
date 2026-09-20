@@ -27,6 +27,7 @@ export function applyEvent(state, event) {
       return { ...state, dailyLogs: { ...state.dailyLogs, [p.date]: logs.some(log => log.id === p.log.id)
         ? logs.map(log => log.id === p.log.id ? p.log : log) : [...logs, p.log] } };
     }
+    case 'logs': return p.logs.reduce((next, log) => applyEvent(next, { type: 'log', payload: { date: p.date, log } }), state);
     case 'deleteLog': return { ...state, dailyLogs: {
       ...state.dailyLogs, [p.date]: (state.dailyLogs[p.date] || []).filter(log => log.id !== p.id)
     } };

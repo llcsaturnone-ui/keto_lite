@@ -67,7 +67,7 @@ function FoodForm({ initial, categories, onSave, onCancel }) {
   </form>;
 }
 
-function FoodBrowser({ foods, dailyLogs, categories, selected, onSelect, management = false, onEdit, onDelete, onAdd }) {
+function FoodBrowser({ foods, dailyLogs, categories, selected = [], onSelect, management = false, onEdit, onDelete, onAdd }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
   const [mode, setMode] = useState('all');
@@ -77,7 +77,7 @@ function FoodBrowser({ foods, dailyLogs, categories, selected, onSelect, managem
   const presentCategories = categories.filter(c => foods.some(food => food.category === c.id));
   useEffect(() => setLimit(8), [query, category, mode]);
   useEffect(() => { if (category !== 'all' && !foods.some(f => f.category === category)) setCategory('all'); }, [foods, category]);
-  return <div className="food-browser">
+  return <div className={`food-browser ${management ? '' : 'food-browser-picker'}`}>
     <label className="search-label"><span className="sr-only">Поиск продукта по названию</span><input type="search" placeholder="Найти продукт…" value={query} onChange={e => setQuery(e.target.value)} autoComplete="off" /></label>
     <div className="filter-modes" role="group" aria-label="Порядок продуктов">
       {[['all', 'Все'], ['recent', 'Недавно добавленные'], ['frequent', 'Часто используемые']].map(([id, title]) =>
@@ -91,14 +91,14 @@ function FoodBrowser({ foods, dailyLogs, categories, selected, onSelect, managem
         <p>{!foods.length ? 'В базе пока нет продуктов' : mode === 'frequent' && !query && category === 'all' ? 'Здесь появятся продукты, которые вы добавляете в дневник' : 'Продукты не найдены'}</p>
         {!foods.length ? <button type="button" className="text-button" onClick={onAdd}>Добавить первый продукт</button> : <button type="button" className="text-button" onClick={() => { setQuery(''); setCategory('all'); setMode('all'); }}>Показать все продукты</button>}
       </div>}
-      {result.slice(0, limit).map(food => <div className={`food-row ${selected === food.id ? 'selected' : ''}`} key={food.id}>
-        <button type="button" className="food-select" onClick={() => management ? onEdit(food) : onSelect(food)} aria-pressed={management ? undefined : selected === food.id}>
+      {result.slice(0, limit).map(food => <div className={`food-row ${selected.includes(food.id) ? 'selected' : ''}`} key={food.id}>
+        <button type="button" className="food-select" onClick={() => management ? onEdit(food) : onSelect(food)} aria-pressed={management ? undefined : selected.includes(food.id)}>
           <span className="food-title">{food.name}</span>
           <span className="food-meta">{categoryName(food.category)}{mode === 'frequent' && used[food.id] ? ` · ${used[food.id].count} записей` : ''}</span>
           <span className="food-macros"><b>{format(food.calories)} ккал</b><span>Б {format(food.protein)}</span><span>Ж {format(food.fat)}</span><span>У {format(food.carbs)}</span><small>на 100 г</small></span>
         </button>
         {management ? <div className="row-actions"><button type="button" className="icon-button" aria-label={`Редактировать ${food.name}`} onClick={() => onEdit(food)}>✎</button><button type="button" className="icon-button danger-text" aria-label={`Удалить ${food.name}`} onClick={() => onDelete(food)}>×</button></div>
-          : <button type="button" className="selection-dot" aria-label={`Выбрать ${food.name}`} aria-pressed={selected === food.id} onClick={() => onSelect(food)}>{selected === food.id ? '✓' : '+'}</button>}
+          : <button type="button" className="selection-dot" aria-label={`Выбрать ${food.name}`} aria-pressed={selected.includes(food.id)} onClick={() => onSelect(food)}>{selected.includes(food.id) ? '✓' : '+'}</button>}
       </div>)}
     </div>
     {result.length > limit && <button type="button" className="secondary more-button" onClick={() => setLimit(limit + 10)}>Показать ещё · {result.length - limit}</button>}
@@ -195,7 +195,7 @@ function App() {
   const [backup, setBackup] = useState(null), [notice, setNotice] = useState(''), [error, setError] = useState('');
   const [backupName, setBackupName] = useState(''), [backupLoading, setBackupLoading] = useState(false);
   const backupRequest = useRef(0);
-  const [selectedId, setSelectedId] = useState(''), [grams, setGrams] = useState('');
+  const [portions, setPortions] = useState([]), [pickerOpen, setPickerOpen] = useState(false);
   const gramsRef = useRef(null), addRef = useRef(null);
   const noticeTimer = useRef(null);
 
@@ -215,9 +215,6 @@ function App() {
     }
     window.addEventListener('storage', sync); return () => window.removeEventListener('storage', sync);
   }, [store]);
-  useEffect(() => {
-    if (selectedId && data && !data.foods.some(f => f.id === selectedId)) setSelectedId('');
-  }, [data, selectedId]);
   useEffect(() => {
     function keepVisible(event) {
       if (!event.target.matches('input, textarea, select')) return;
@@ -251,7 +248,7 @@ function App() {
   function cancelBackup() { backupRequest.current++; setBackup(null); setBackupName(''); setBackupLoading(false); }
   function saveBackup() { try { downloadJson({ version: 11, ...store.read(), exportedAt: new Date().toISOString() }, `nutrition-backup-${localDate()}.json`); } catch (e) { setError(e.message); } }
   function restore() {
-    try { const next = fatal ? store.recover(backup) : store.commit('replace', backup); setData(next); setFatal(''); cancelBackup(); setSelectedId(''); setError(''); notify('Резервная копия восстановлена'); }
+    try { const next = fatal ? store.recover(backup) : store.commit('replace', backup); setData(next); setFatal(''); cancelBackup(); setPortions([]); setPickerOpen(false); setError(''); notify('Резервная копия восстановлена'); }
     catch (e) { setError(e.message); }
   }
   const categories = useMemo(() => {
@@ -269,9 +266,14 @@ function App() {
   const { goals, foods, dailyLogs } = data;
   const logs = dailyLogs[date] || [];
   const totals = Object.fromEntries(macroFields.map(([key]) => [key, logs.reduce((sum, log) => sum + log[`total${key[0].toUpperCase()}${key.slice(1)}`], 0)]));
-  const selected = foods.find(f => f.id === selectedId);
+  const selected = portions.map(portion => ({ ...portion, food: foods.find(f => f.id === portion.id) }));
   let preview = null;
-  if (selected && number(grams) > 0) { try { preview = calculate(selected, grams); } catch {} }
+  if (selected.length && selected.every(portion => portion.food && number(portion.grams) > 0)) {
+    try {
+      const values = selected.map(portion => calculate(portion.food, portion.grams));
+      preview = Object.fromEntries(macroFields.map(([key]) => [key, values.reduce((sum, value) => sum + value[key], 0)]));
+    } catch {}
+  }
   const sortedLogs = [...logs].reverse().sort((a,b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0));
 
   function saveFood(food) {
@@ -281,17 +283,40 @@ function App() {
     commit('foods', [{ ...food, id: foodDraft?.id || food.id, createdAt: foodDraft ? foodDraft.createdAt : food.createdAt }]);
     setSettingsView('products'); notify(foodDraft ? 'Продукт обновлён' : 'Продукт добавлен');
   }
-  function addFood(e) {
+  function toggleFood(food) {
+    setPortions(current => current.some(portion => portion.id === food.id)
+      ? current.filter(portion => portion.id !== food.id)
+      : [...current, { id: food.id, name: food.name, grams: '100' }]);
+    setError('');
+  }
+  function finishSelection() {
+    setPickerOpen(false);
+    setTimeout(() => {
+      addRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      gramsRef.current?.focus({ preventScroll: true });
+      gramsRef.current?.select();
+    }, 0);
+  }
+  function addFoods(e) {
     e.preventDefault(); setError('');
     try {
-      const food = store.read().foods.find(f => f.id === selectedId);
-      if (!food) throw new Error('Сначала выберите продукт.');
-      const amount = number(grams); if (!(amount > 0)) throw new Error('Укажите вес больше нуля, например 150 или 150,5.');
-      const calc = calculate(food, amount);
-      const log = { id: makeId(), createdAt: new Date().toISOString(), foodId: food.id, foodName: food.name, grams: amount,
-        nutritionPer100: Object.fromEntries(macroFields.map(([k]) => [k, food[k]])),
-        ...Object.fromEntries(macroFields.map(([k]) => [`total${k[0].toUpperCase()}${k.slice(1)}`, calc[k]])) };
-      commit('log', { date, log }); setGrams(''); setSelectedId(''); notify(`Добавлено: ${food.name}`);
+      if (!portions.length) throw new Error('Сначала выберите продукты.');
+      const freshFoods = new Map(store.read().foods.map(food => [food.id, food]));
+      const createdAt = new Date().toISOString();
+      const entries = portions.map(portion => {
+        const food = freshFoods.get(portion.id);
+        if (!food) throw new Error(`«${portion.name}» уже удалён из базы. Уберите его из выбранных продуктов.`);
+        const amount = number(portion.grams);
+        if (!(amount > 0)) throw new Error(`«${food.name}»: укажите вес больше нуля, например 150 или 150,5.`);
+        const calc = calculate(food, amount);
+        return { id: makeId(), createdAt, foodId: food.id, foodName: food.name, grams: amount,
+          nutritionPer100: Object.fromEntries(macroFields.map(([k]) => [k, food[k]])),
+          ...Object.fromEntries(macroFields.map(([k]) => [`total${k[0].toUpperCase()}${k.slice(1)}`, calc[k]])) };
+      });
+      // Validate every portion first, then persist the whole meal in one action.
+      commit('logs', { date, logs: entries });
+      setPortions([]); setPickerOpen(false);
+      notify(entries.length === 1 ? `Добавлено: ${entries[0].foodName}` : `Добавлено продуктов: ${entries.length}`);
     } catch (e) { setError(e.message); }
   }
 
@@ -308,12 +333,28 @@ function App() {
         })}</section>
 
         <section className="card" aria-labelledby="add-title"><div className="section-header"><h2 id="add-title">Добавить еду</h2><button className="text-button" onClick={openProducts}>Мои продукты</button></div>
-          <FoodBrowser foods={foods} dailyLogs={dailyLogs} categories={categories} selected={selectedId} onSelect={food => { setSelectedId(food.id); if (!grams) setGrams('100'); setTimeout(() => { addRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); gramsRef.current?.focus({ preventScroll: true }); gramsRef.current?.select(); }, 0); }} onAdd={openNew} />
-          {selected && <form ref={addRef} className="portion-form" onSubmit={addFood}><div className="selected-heading"><span><small>Выбран продукт</small><strong>{selected.name}</strong></span><button type="button" className="icon-button" aria-label="Снять выбор продукта" onClick={() => setSelectedId('')}>×</button></div><div className="portion-row"><label><span>Вес, г</span><input ref={gramsRef} type="text" inputMode="decimal" required placeholder="100" value={grams} onChange={e => setGrams(e.target.value)} /></label><button className="primary" type="submit">＋ Добавить</button></div>{preview && <p className="portion-preview"><b>{format(preview.calories)} ккал</b><span>Б {format(preview.protein)}</span><span>Ж {format(preview.fat)}</span><span>У {format(preview.carbs)}</span></p>}</form>}
+          <button type="button" className="product-picker-toggle" aria-expanded={pickerOpen} aria-controls="food-picker" onClick={() => setPickerOpen(!pickerOpen)}>
+            <span><strong>{pickerOpen ? 'Свернуть список' : 'Выбрать продукты'}</strong><small>{selected.length ? `Выбрано: ${selected.length}` : `Продуктов в базе: ${foods.length}`}</small></span><span className="picker-chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div id="food-picker" hidden={!pickerOpen}>
+            {pickerOpen && <><p className="hint picker-hint">Отметьте продукты, затем укажите вес каждого.</p><FoodBrowser foods={foods} dailyLogs={dailyLogs} categories={categories} selected={portions.map(portion => portion.id)} onSelect={toggleFood} onAdd={openNew} />
+              {selected.length > 0 && <button className="secondary full picker-done" type="button" onClick={finishSelection}>Готово · выбрано {selected.length}</button>}
+            </>}
+          </div>
+          {selected.length > 0 && <form ref={addRef} className="portion-form" onSubmit={addFoods}>
+            <div className="portion-list-heading"><span>Выбранные продукты</span><span>Вес, г</span></div>
+            <div className="selected-portions">{selected.map((portion, index) => <div className="selected-portion" key={portion.id}>
+              <label className="portion-name" htmlFor={`portion-${portion.id}`}>{portion.food?.name || portion.name}{!portion.food && <small className="danger-text">Удалён из базы</small>}</label>
+              <input id={`portion-${portion.id}`} ref={index === 0 ? gramsRef : undefined} type="text" inputMode="decimal" required autoComplete="off" placeholder="100" aria-label={`Вес ${portion.food?.name || portion.name}, г`} value={portion.grams} onChange={e => setPortions(current => current.map(item => item.id === portion.id ? { ...item, grams: e.target.value } : item))} onFocus={e => e.target.select()} />
+              <button type="button" className="icon-button" aria-label={`Убрать ${portion.food?.name || portion.name} из выбранных`} onClick={() => setPortions(current => current.filter(item => item.id !== portion.id))}>×</button>
+            </div>)}</div>
+            {preview && <p className="portion-preview"><span>Итого:</span><b>{format(preview.calories)} ккал</b><span>Б {format(preview.protein)}</span><span>Ж {format(preview.fat)}</span><span>У {format(preview.carbs)}</span></p>}
+            <button className="primary full add-portions" type="submit">Добавить в дневник · {selected.length}</button>
+          </form>}
         </section>
 
         <section className="card" aria-labelledby="eaten-title"><div className="section-header"><h2 id="eaten-title">Съедено</h2><span className="count-badge">{logs.length}</span></div>
-          {!logs.length && <div className="empty-state"><p>Пока нет записей за этот день</p><small>Выберите продукт и укажите вес выше</small></div>}
+          {!logs.length && <div className="empty-state"><p>Пока нет записей за этот день</p><small>Выберите продукты и укажите вес выше</small></div>}
           <div className="diary-list">{sortedLogs.map(log => <article className="diary-row" key={log.id}><div className="diary-product"><strong>{log.foodName}</strong><span>{format(log.grams)} г</span></div><div className="diary-nutrition"><b>{format(log.totalCalories)} <small>ккал</small></b><span>Б {format(log.totalProtein)} · Ж {format(log.totalFat)} · У {format(log.totalCarbs)}</span></div><div className="row-actions"><button className="icon-button" aria-label={`Редактировать запись ${log.foodName}`} onClick={() => setEditLog({ date, log })}>✎</button><button className="icon-button danger-text" aria-label={`Удалить запись ${log.foodName}`} onClick={() => setConfirmation({ kind: 'log', item: log, date })}>×</button></div></article>)}</div>
         </section>
         <footer>Данные сохраняются на этом устройстве.<button className="text-button" onClick={saveBackup}>Скачать резервную копию</button></footer>
