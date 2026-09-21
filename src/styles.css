@@ -165,6 +165,83 @@ footer button { display: block; margin: 4px auto 0; font-size: 11px !important; 
 .recovery { padding: 30px 20px; }
 .recovery h1 { margin-bottom: 24px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.app-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 16px 18px 0; padding: 4px; background: #18181b; border: 1px solid #303035; border-radius: 15px; }
+.app-tabs button { min-height: 45px; border-radius: 11px; color: #a1a1aa; font-size: 14px; font-weight: 650; }
+.app-tabs button.active { background: #244235; color: #a7f3d0; box-shadow: 0 1px 4px #0003; }
+.app-version { display: block; color: #858590; margin-top: 7px; font-size: 10px; }
+.quick-food-modes { display: grid; grid-template-columns: 1fr 1.3fr; gap: 7px; }
+.quick-food-modes .chip { font-size: 12px; }
+.quick-food-caption { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 12px 0 9px; font-size: 10px; color: #a1a1aa; }
+.food-carousel { display: flex; gap: 10px; overflow-x: auto; overflow-y: hidden; padding: 2px 2px 10px; scroll-snap-type: x proximity; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #46554e transparent; }
+.food-tile { position: relative; flex: 0 0 144px; min-width: 0; background: #232326; border: 1px solid #3b3b43; border-radius: 15px; scroll-snap-align: start; overflow: hidden; }
+.food-tile.selected { background: #163529; border-color: #34d399; }
+.food-tile > .food-select { width: 100%; min-height: 146px; height: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 11px 10px 9px; }
+.food-tile .food-title { padding-right: 28px; height: 36px; font-size: 12px; width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.food-tile-calories { font-size: 16px; color: #a7f3d0; font-weight: 700; margin-top: auto; }
+.food-tile-calories small { font-size: 9px; color: #a1a1aa; font-weight: 500; }
+.food-tile-macros { font-size: 9px; color: #b5b5bf; line-height: 1.5; }
+.food-tile-action { border-top: 1px solid #ffffff14; padding-top: 8px; width: 100%; font-size: 11px; color: #d4d4d8; }
+.food-tile.selected .food-tile-action { color: #6ee7b7; }
+.favorite-button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 11px; font-size: 24px; line-height: 1; color: #b1b1bd; }
+.favorite-button.active { color: #fbbf24; }
+.favorite-button:hover { background: #ffffff09; }
+.food-tile > .favorite-button { position: absolute; top: 2px; right: 1px; z-index: 1; }
+.food-row .row-actions { flex-wrap: wrap; max-width: 84px; justify-content: center; gap: 0; }
+.food-row .row-actions .favorite-button { width: 100%; }
+.quick-food-empty { padding: 12px 0 2px; font-size: 12px; color: #a1a1aa; line-height: 1.7; }
+.weight-summary { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 20px; }
+.weight-summary p { margin-top: 6px; font-size: 40px; font-weight: 700; color: #a7f3d0; letter-spacing: -1.2px; font-variant-numeric: tabular-nums; }
+.weight-summary p small { font-size: 16px; color: #a1a1aa; font-weight: 400; letter-spacing: 0; }
+.weight-change { display: flex; flex-direction: column; gap: 10px; text-align: right; }
+.weight-change strong { color: #d4d4d8; font-size: 17px; font-variant-numeric: tabular-nums; }
+.progress-day-status { text-align: center; font-size: 10px; margin-top: 10px; }
+.chart-group { margin-bottom: 12px; }
+.period-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.period-buttons .chip { font-size: 10px; }
+.average-toggle { margin: 15px 0 12px; align-items: center; min-height: 30px; }
+.metric-toggles { display: flex; gap: 7px; margin: 13px 0 10px; padding: 2px 2px 8px; overflow-x: auto; scrollbar-width: thin; }
+.metric-toggles .chip { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; white-space: nowrap; padding-inline: 9px; }
+.metric-toggles .chip:not(.active) { opacity: .6; }
+.metric-toggles i, .chart-values i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.line-chart { width: 100%; height: auto; display: block; overflow: visible; touch-action: pan-y; user-select: none; }
+.line-chart text { fill: #a1a1aa; font-size: 10px; font-variant-numeric: tabular-nums; }
+.chart-empty { min-height: 220px; display: flex; flex-direction: column; justify-content: center; gap: 10px; padding-inline: 8px; }
+.chart-empty > span { font-size: 36px; color: #6ee7b7; }
+.chart-hint { font-size: 10px; margin-top: 12px; }
+.chart-readout { padding: 12px; background: #232326; border: 1px solid #34343b; border-radius: 13px; }
+.chart-date { display: flex; align-items: center; gap: 12px; }
+.chart-date > span { white-space: nowrap; font-size: 11px !important; margin: 0 !important; }
+.chart-date select { font-size: 13px; padding: 9px 26px 9px 10px; min-height: 44px; }
+.chart-values { display: flex; flex-direction: column; gap: 10px; margin-top: 13px; }
+.chart-values > div { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 11px; }
+.chart-values > div > span { display: flex; align-items: center; gap: 6px; color: #b6b6bf; }
+.chart-values strong { font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.measurement-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 12px; }
+.measurement-inputs label > span { min-height: 30px; display: flex; align-items: flex-end; line-height: 1.4; }
+.measurement-inputs input { font-variant-numeric: tabular-nums; }
+.measurement-details { border-top: 1px solid #36363b; padding-top: 16px; }
+.measurement-details summary { cursor: pointer; min-height: 44px; font-size: 15px; font-weight: 650; line-height: 1.5; }
+.measurement-form textarea { min-height: 78px; }
+.measurement-history { display: flex; flex-direction: column; gap: 12px; }
+.measurement-history-row { background: #232326; border-radius: 14px; padding: 8px 12px 14px; }
+.measurement-history-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+.measurement-history-header > strong { font-size: 13px; color: #d4d4d8; }
+.measurement-history-values { display: flex; gap: 7px 12px; flex-wrap: wrap; }
+.measurement-history-values > span { font-size: 11px; color: #a1a1aa; line-height: 1.6; }
+.measurement-history-values b { color: #e4e4e7; font-weight: 550; }
+.measurement-note { margin-top: 8px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.meal-picker { display: flex; flex-direction: column; gap: 12px; }
+.portion-form > .meal-picker { margin-bottom: 18px; }
+.meal-groups { display: flex; flex-direction: column; gap: 20px; }
+.meal-group + .meal-group { border-top: 1px solid #36363b; padding-top: 16px; }
+.meal-group-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.meal-group-header h3 { font-size: 16px; margin: 0; line-height: 1.4; overflow-wrap: anywhere; }
+.meal-group-header h3 span { color: #a1a1aa; font-size: 11px; padding-left: 5px; }
+.meal-group-header .text-button { flex-shrink: 0; }
+.meal-totals { display: flex; flex-wrap: wrap; gap: 6px 11px; align-items: baseline; background: #123529; border: 1px solid #34d39930; padding: 10px; margin: 7px 0; border-radius: 11px; }
+.meal-totals strong { font-size: 14px; color: #6ee7b7; }
+.meal-totals span { font-size: 10px; color: #c4d2cd; }
+.meal-products summary { cursor: pointer; font-size: 11px; color: #a1a1aa; min-height: 42px; padding: 12px 2px; }
 @media (min-width:600px) { body { padding: 26px 0; } .app { border: 1px solid #29292e; border-radius: 24px; min-height: calc(100dvh - 52px); overflow: hidden; } .modal { inset: 0; margin: auto; border: 1px solid #414149; border-radius: 22px; max-height: min(88dvh,850px); } }
 @media (max-width:359px) { .main-content { padding-inline: 12px; } .app-header { padding-inline: 16px; } .card { padding: 13px; } .macro-card { padding-inline: 11px; } .macro-value { font-size: 23px; } .food-row .row-actions { flex-direction: column; } .food-row .row-actions .icon-button { height: 33px; } .modal-body { padding-inline: 16px; } }
 @media (prefers-reduced-motion:reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }

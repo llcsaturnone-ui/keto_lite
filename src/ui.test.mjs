@@ -84,11 +84,14 @@ async function mount(t, { initial = data(), storageEntries } = {}) {
   return { window, document, query, button, click, input, submit, topDialog, state, rows };
 }
 
-test('the application exposes only the diary and settings, with four daily nutrients', async t => {
+test('diary and progress navigation keeps four daily nutrients and existing settings', async t => {
   const ui = await mount(t);
   assert.equal(ui.query('h1').textContent, 'Дневник');
   assert.equal(ui.document.querySelectorAll('.macro-card').length, 4);
-  assert.equal(ui.document.querySelectorAll('nav, [role="tablist"]').length, 0);
+  assert.equal(ui.document.querySelectorAll('.app-tabs button').length, 2);
+  await ui.click(ui.button('↗ Прогресс'));
+  assert.equal(ui.query('h1').textContent, 'Прогресс');
+  await ui.click(ui.button('Дневник'));
   for (const title of ['Дела', 'Намаз', 'Тренировки', 'База']) {
     assert.ok(![...ui.document.querySelectorAll('button, h1, h2, h3')].some(node => node.textContent.trim() === title));
   }
@@ -126,8 +129,8 @@ test('product CRUD, decimal meals and date navigation preserve saved diary snaps
   assert.equal(ui.state().foods.length, 1);
   await ui.click(ui.button('Закрыть', ui.topDialog()));
 
-  await ui.click(ui.query('.product-picker-toggle'));
-  await ui.click(ui.query('.food-select'));
+  await ui.input(ui.query('main input[type="search"]'), 'Йогурт');
+  await ui.click(ui.query('main .food-select'));
   await ui.input(ui.query('.portion-form input'), '150,5');
   assert.match(ui.query('.portion-preview').textContent, /139 ккал/);
   await ui.submit(ui.query('.portion-form'));
@@ -176,48 +179,53 @@ test('product CRUD, decimal meals and date navigation preserve saved diary snaps
   assert.equal(reloaded.document.querySelectorAll('.diary-row').length, 1);
 });
 
-test('search, category, recent and frequent filters work together in the diary and settings', async t => {
-  const apple = food('apple', 'Яблоко', { category: 'fruits', createdAt: '2026-09-01T10:00:00.000Z' });
-  const chicken = food('chicken', 'Куриное филе', { category: 'meat', createdAt: '2026-09-20T10:00:00.000Z' });
-  const grain = food('grain', 'Гречка варёная', { category: 'grains', createdAt: '2026-09-15T10:00:00.000Z' });
+test('global search, favorite stars and frequent products stay independent of management filters', async t => {
+  const apple = food('apple', 'Яблоко', { category: 'fruits' });
+  const chicken = food('chicken', 'Куриное филе', { category: 'meat' });
+  const grain = food('grain', 'Гречка варёная', { category: 'grains' });
   const ui = await mount(t, { initial: data([apple, chicken, grain], {
     '2026-09-19': [meal('1', chicken), meal('2', apple)],
     '2026-09-20': [meal('3', chicken)],
   }) });
   const main = ui.query('main');
-  await ui.click(ui.query('.product-picker-toggle'));
-  await ui.input(ui.query('input[type="search"]', main), 'ВАРЕНАЯ греч');
-  assert.deepEqual(ui.rows(), ['Гречка варёная']);
-  await ui.input(ui.query('.category-row select', main), 'meat');
+  assert.deepEqual(ui.rows(), ['Куриное филе', 'Яблоко']);
+  assert.equal(main.querySelector('.food-results'), null);
+  await ui.click(ui.button('★ Избранное', main));
   assert.deepEqual(ui.rows(), []);
-  await ui.input(ui.query('input[type="search"]', main), '');
-  assert.deepEqual(ui.rows(), ['Куриное филе']);
-  await ui.input(ui.query('.category-row select', main), 'all');
-  await ui.click(ui.button('Недавно добавленные', main));
-  assert.deepEqual(ui.rows(), ['Куриное филе', 'Гречка варёная', 'Яблоко']);
+  await ui.input(ui.query('input[type="search"]', main), 'ВАРЕНАЯ греч');
+  assert.deepEqual(ui.rows(), ['Гречка варёная'], 'Search includes products outside favorites and history');
+  await ui.click(ui.button('Добавить Гречка варёная в избранное', main));
+  assert.deepEqual(ui.state().favorites, ['grain']);
+  assert.equal(ui.document.querySelector('.portion-form'), null, 'Starring must not select a meal');
+  await ui.click(ui.button('★ Избранное', main));
+  assert.deepEqual(ui.rows(), ['Гречка варёная']);
+  await ui.click(ui.button('Выбрать Гречка варёная', main));
+  await ui.click(ui.button('Убрать Гречка варёная из избранного', main));
+  assert.deepEqual(ui.rows(), []);
+  assert.equal(ui.document.querySelectorAll('.selected-portion').length, 1);
   await ui.click(ui.button('Часто используемые', main));
   assert.deepEqual(ui.rows(), ['Куриное филе', 'Яблоко']);
-  assert.match(ui.query('.food-meta', main).textContent, /2 записей/);
-  await ui.input(ui.query('.category-row select', main), 'fruits');
-  assert.deepEqual(ui.rows(), ['Яблоко']);
-  await ui.click(ui.button('Мои продукты', main));
+  await ui.click(ui.button(/Настройки/));
+  await ui.click(ui.button(/Управлять продуктами/, ui.topDialog()));
   const settings = ui.topDialog();
   await ui.click(ui.button('Часто используемые', settings));
   assert.deepEqual(ui.rows(settings), ['Куриное филе', 'Яблоко']);
-  await ui.input(ui.query('input[type="search"]', settings), 'ябл');
+  await ui.input(ui.query('.category-row select', settings), 'fruits');
   assert.deepEqual(ui.rows(settings), ['Яблоко']);
+  await ui.click(ui.button('Добавить Яблоко в избранное', settings));
+  assert.deepEqual(ui.state().favorites, ['apple']);
+  await ui.click(ui.button('Закрыть', settings));
+  await ui.click(ui.button('★ Избранное', main));
+  assert.deepEqual(ui.rows(), ['Яблоко']);
 });
 
-test('a collapsed picker adds multiple portions across searches in one saved action', async t => {
+test('quick search adds multiple portions across searches and tabs in one saved action', async t => {
   const cucumber = food('cucumber', 'Огурец', { calories: 15, protein: 0.8, fat: 0.1, carbs: 2.5 });
   const egg = food('egg', 'Яйцо', { calories: 143, protein: 12.6, fat: 9.5, carbs: 0.7 });
   const fish = food('fish', 'Минтай', { calories: 72, protein: 15.9, fat: 0.9, carbs: 0 });
   const ui = await mount(t, { initial: data([cucumber, egg, fish]) });
-  const toggle = ui.query('.product-picker-toggle');
-  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
-  assert.equal(ui.query('#food-picker').hidden, true);
   assert.equal(ui.document.querySelector('main .food-select'), null);
-  await ui.click(toggle);
+  await ui.input(ui.query('main input[type="search"]'), 'Огурец');
   await ui.click(ui.button('Выбрать Огурец'));
   await ui.input(ui.query('input[aria-label="Вес Огурец, г"]'), '150,5');
   await ui.input(ui.query('input[type="search"]'), 'Яйцо');
@@ -226,9 +234,9 @@ test('a collapsed picker adds multiple portions across searches in one saved act
   await ui.click(ui.button('Выбрать Минтай'));
   assert.equal(ui.document.querySelectorAll('.selected-portion').length, 3);
   assert.equal(ui.query('input[aria-label="Вес Огурец, г"]').value, '150,5');
-  await ui.click(ui.button('Готово · выбрано 3'));
-  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
-  assert.equal(ui.document.activeElement, ui.query('input[aria-label="Вес Огурец, г"]'));
+  await ui.click(ui.button('↗ Прогресс'));
+  await ui.click(ui.button('Дневник'));
+  assert.equal(ui.query('input[aria-label="Вес Огурец, г"]').value, '150,5');
   await ui.input(ui.query('input[aria-label="Вес Минтай, г"]'), '200');
   assert.match(ui.query('.portion-preview').textContent, /310 ккал/);
   assert.match(ui.query('.portion-preview').textContent, /Б 45,6/);
@@ -240,7 +248,6 @@ test('a collapsed picker adds multiple portions across searches in one saved act
   assert.equal(ui.window.localStorage.length, beforeKeys + 1, 'All portions must be persisted in one journal entry');
   assert.equal(ui.document.querySelectorAll('.diary-row').length, 3);
   assert.equal(ui.document.querySelector('.portion-form'), null);
-  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
   const stored = Array.from({ length: ui.window.localStorage.length }, (_, index) => {
     const key = ui.window.localStorage.key(index);
     return [key, ui.window.localStorage.getItem(key)];
@@ -257,8 +264,9 @@ test('a collapsed picker adds multiple portions across searches in one saved act
 test('invalid weights or products removed in another tab never save a partial meal', async t => {
   const first = food('first', 'Огурец'), second = food('second', 'Яйцо');
   const ui = await mount(t, { initial: data([first, second]) });
-  await ui.click(ui.query('.product-picker-toggle'));
+  await ui.input(ui.query('main input[type="search"]'), 'Огурец');
   await ui.click(ui.button('Выбрать Огурец'));
+  await ui.input(ui.query('main input[type="search"]'), 'Яйцо');
   await ui.click(ui.button('Выбрать Яйцо'));
   await ui.input(ui.query('input[aria-label="Вес Яйцо, г"]'), '-5');
   const before = ui.state();
@@ -361,4 +369,138 @@ test('backup previews discard invalid files, stale asynchronous reads and reads 
   await ui.click(ui.button(/Настройки/));
   assert.equal(ui.topDialog().querySelector('.backup-preview'), null);
   assert.equal(ui.state().foods[0].id, 'latest');
+});
+
+test('progress saves partial daily records, draws dated lines, edits and deletes without touching the diary', async t => {
+  const apple = food('apple', 'Яблоко');
+  const ui = await mount(t, { initial: data([apple], { '2026-09-21': [meal('meal-1', apple)] }) });
+  await ui.input(ui.query('input[type="date"]'), '2026-09-21');
+  const originalLogs = ui.state().dailyLogs;
+  await ui.click(ui.button('↗ Прогресс'));
+  await ui.click(ui.button('＋ Добавить замеры'));
+  await ui.input(ui.query('input[aria-label="Вес, кг"]', ui.topDialog()), '93,1');
+  await ui.input(ui.query('input[aria-label="Жир, %"]', ui.topDialog()), '28,6');
+  await ui.input(ui.query('input[aria-label="Живот на уровне пупка, см"]', ui.topDialog()), '105');
+  await ui.submit(ui.query('form', ui.topDialog()));
+  assert.deepEqual(ui.state().measurements['2026-09-21'], { weight: 93.1, fatPercent: 28.6, waist: 105 });
+  assert.match(ui.query('.progress-page').textContent, /Линия появится после следующего замера/);
+  await ui.click(ui.button('Предыдущий день'));
+  await ui.click(ui.button('＋ Добавить замеры'));
+  await ui.input(ui.query('input[aria-label="Вес, кг"]', ui.topDialog()), '93,4');
+  await ui.submit(ui.query('form', ui.topDialog()));
+  await ui.click(ui.button('Следующий день'));
+  assert.ok(ui.query('polyline[data-series="weight"]'));
+  await ui.input(ui.query('select[aria-label="Дата на графике"]'), '2026-09-20');
+  assert.match(ui.query('.chart-values').textContent, /93,4 кг/);
+  await ui.input(ui.query('select[aria-label="Показатели графика"]'), 'percent');
+  assert.match(ui.query('.chart-values').textContent, /28,6 %/);
+  assert.match(ui.query('.chart-values').textContent, /Нет замера/);
+  await ui.click(ui.button('Изменить замеры за этот день'));
+  await ui.input(ui.query('input[aria-label="Вес, кг"]', ui.topDialog()), '92,9');
+  await ui.input(ui.query('input[aria-label="Живот на уровне пупка, см"]', ui.topDialog()), '');
+  await ui.submit(ui.query('form', ui.topDialog()));
+  assert.deepEqual(ui.state().measurements['2026-09-21'], { weight: 92.9, fatPercent: 28.6 });
+  await ui.click(ui.button('Удалить замеры 20.09.2026'));
+  await ui.click(ui.button('Удалить', ui.topDialog()));
+  assert.equal(Object.keys(ui.state().measurements).length, 1);
+  assert.deepEqual(ui.state().dailyLogs, originalLogs);
+  const stored = Array.from({ length: ui.window.localStorage.length }, (_, index) => {
+    const key = ui.window.localStorage.key(index); return [key, ui.window.localStorage.getItem(key)];
+  });
+  const reloaded = await mount(t, { storageEntries: stored });
+  assert.deepEqual(reloaded.state().measurements, ui.state().measurements);
+});
+
+test('invalid percentages and storage failures keep measurement drafts and previous data', async t => {
+  const ui = await mount(t, { initial: { ...data(), measurements: { '2026-09-21': { weight: 93.1, waist: 105 } } } });
+  await ui.input(ui.query('input[type="date"]'), '2026-09-21');
+  await ui.click(ui.button('↗ Прогресс'));
+  await ui.click(ui.button('Изменить замеры за этот день'));
+  await ui.input(ui.query('input[aria-label="Вес, кг"]', ui.topDialog()), '92,9');
+  await ui.input(ui.query('input[aria-label="Мышцы, %"]', ui.topDialog()), '120');
+  await ui.submit(ui.query('form', ui.topDialog()));
+  assert.match(ui.query('[role="alert"]', ui.topDialog()).textContent, /Мышцы/);
+  assert.equal(ui.state().measurements['2026-09-21'].weight, 93.1);
+  await ui.input(ui.query('input[aria-label="Мышцы, %"]', ui.topDialog()), '67,6');
+  const original = ui.window.Storage.prototype.setItem;
+  ui.window.Storage.prototype.setItem = function (key, value) { if (key.startsWith(EVENT_PREFIX)) throw new Error('quota'); original.call(this, key, value); };
+  await ui.submit(ui.query('form', ui.topDialog()));
+  assert.match(ui.query('[role="alert"]', ui.topDialog()).textContent, /не применено/);
+  assert.equal(ui.query('input[aria-label="Вес, кг"]', ui.topDialog()).value, '92,9');
+  ui.window.Storage.prototype.setItem = original;
+  createStore(ui.window.localStorage).commit('measurement', { date: '2026-09-21', patch: { waist: 104 } });
+  await ui.submit(ui.query('form', ui.topDialog()));
+  assert.deepEqual(ui.state().measurements['2026-09-21'], { weight: 92.9, musclePercent: 67.6, waist: 104 });
+});
+
+test('backup preview and restore include measurements and favorites', async t => {
+  const ui = await mount(t);
+  const saved = { version: 12, ...data([food('egg', 'Яйцо')]), favorites: ['egg'], measurements: { '2026-09-21': { weight: 93.1, bicepsLeft: 36, musclePercent: 67.6 } } };
+  await ui.click(ui.button(/Настройки/));
+  const input = ui.query('input[type="file"]', ui.topDialog());
+  Object.defineProperty(input, 'files', { configurable: true, value: [{ name: 'full-backup.json', size: 100, text: () => Promise.resolve(JSON.stringify(saved)) }] });
+  input.dispatchEvent(new ui.window.Event('change', { bubbles: true }));
+  await pause();
+  assert.match(ui.query('.backup-preview').textContent, /1 дней замеров · 1 избранных/);
+  await ui.click(ui.button('Восстановить', ui.topDialog()));
+  assert.deepEqual(ui.state().measurements, saved.measurements);
+  assert.deepEqual(ui.state().favorites, ['egg']);
+  await ui.click(ui.button('Закрыть', ui.topDialog()));
+  await ui.click(ui.button('★ Избранное'));
+  assert.deepEqual(ui.rows(), ['Яйцо']);
+});
+
+test('separate additions join the same lunch, individual foods move groups and group totals stay exact', async t => {
+  const apple = food('apple', 'Яблоко', { calories: 52, protein: 0.3, fat: 0.2, carbs: 14 });
+  const egg = food('egg', 'Яйцо', { calories: 143, protein: 12.6, fat: 9.5, carbs: 0.7 });
+  const ui = await mount(t, { initial: data([apple, egg]) });
+  const search = ui.query('main input[type="search"]');
+  await ui.input(search, 'Яблоко');
+  await ui.click(ui.button('Выбрать Яблоко'));
+  await ui.input(ui.query('.portion-form select[aria-label="Приём пищи"]'), 'Обед');
+  await ui.submit(ui.query('.portion-form'));
+  await ui.input(search, 'Яйцо');
+  await ui.click(ui.button('Выбрать Яйцо'));
+  await ui.submit(ui.query('.portion-form'));
+  assert.equal(ui.document.querySelectorAll('.meal-group').length, 1);
+  assert.equal(ui.document.querySelectorAll('.diary-row').length, 2);
+  assert.match(ui.query('.meal-totals').textContent, /195 ккал/);
+  assert.match(ui.query('.meal-totals').textContent, /Б 12,9/);
+  await ui.click(ui.button('Редактировать запись Яйцо'));
+  await ui.input(ui.query('select[aria-label="Приём пищи"]', ui.topDialog()), 'Завтрак');
+  await ui.submit(ui.query('form', ui.topDialog()));
+  assert.equal(ui.document.querySelectorAll('.meal-group').length, 2);
+  await ui.click(ui.button('Изменить группу Завтрак'));
+  await ui.input(ui.query('select[aria-label="Приём пищи"]', ui.topDialog()), 'Обед');
+  await ui.submit(ui.query('form', ui.topDialog()));
+  assert.equal(ui.document.querySelectorAll('.meal-group').length, 1);
+  assert.match(ui.query('.meal-totals').textContent, /195 ккал/);
+  const day = ui.query('input[type="date"]').value;
+  assert.deepEqual(ui.state().dailyLogs[day].map(log => log.meal), ['Обед', 'Обед']);
+});
+
+test('new products can be added directly from the diary manually or as JSON without an import wizard', async t => {
+  const ui = await mount(t);
+  await ui.click(ui.button('＋ Продукт'));
+  await ui.input(ui.query('input[placeholder="Например, йогурт"]', ui.topDialog()), 'Йогурт 2%');
+  for (const [label, value] of [['Ккал', '70'], ['Белки, г', '8,5'], ['Жиры, г', '2'], ['Углеводы, г', '4,5']]) await ui.input(ui.query(`input[aria-label="${label}"]`, ui.topDialog()), value);
+  await ui.submit(ui.query('form', ui.topDialog()));
+  assert.equal(ui.topDialog(), undefined);
+  assert.equal(ui.state().foods[0].category, 'dairy');
+  assert.equal(ui.state().foods[0].protein, 8.5);
+  assert.equal(ui.document.querySelectorAll('.selected-portion').length, 1);
+  assert.deepEqual(ui.state().dailyLogs, {}, 'Adding a product must not log unconfirmed grams');
+  await ui.click(ui.button('＋ Продукт'));
+  await ui.click(ui.button('JSON или текст', ui.topDialog()));
+  await ui.input(ui.query('textarea', ui.topDialog()), JSON.stringify([{ name: 'Минтай', calories: 72, protein: 16, fat: 1, carbs: 0 }, { name: 'Помидор', calories: 20, protein: 1, fat: 0.2, carbs: 3.5 }]));
+  assert.match(ui.topDialog().textContent, /Распознано: Минтай, Помидор/);
+  await ui.submit(ui.query('form', ui.topDialog()));
+  assert.equal(ui.state().foods.length, 3);
+  assert.equal(ui.document.querySelectorAll('.selected-portion').length, 3);
+  await ui.click(ui.button('＋ Продукт'));
+  await ui.click(ui.button('JSON или текст', ui.topDialog()));
+  await ui.input(ui.query('textarea', ui.topDialog()), JSON.stringify([{ name: 'Новый', calories: 72, protein: 16, fat: 1, carbs: 0 }, { name: 'Минтай', calories: 70, protein: 16, fat: 1, carbs: 0 }]));
+  await ui.submit(ui.query('form', ui.topDialog()));
+  assert.match(ui.query('[role="alert"]', ui.topDialog()).textContent, /уже есть/);
+  assert.equal(ui.state().foods.length, 3, 'Duplicate JSON never imports a partial batch');
 });

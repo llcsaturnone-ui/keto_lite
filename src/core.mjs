@@ -36,6 +36,45 @@ const aliases = {
 const isRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const labelOf = value => String(value).toLocaleLowerCase('ru').replace(/ё/g, 'е');
 
+export const MEASUREMENT_FIELDS = [
+  { id: 'weight', label: 'Вес', unit: 'кг', group: 'main', chart: 'weight', color: '#34d399', max: 600 },
+  { id: 'fatPercent', label: 'Жир', unit: '%', group: 'main', chart: 'percent', color: '#fbbf24', max: 100, zero: true },
+  { id: 'musclePercent', label: 'Мышцы', unit: '%', group: 'main', chart: 'percent', color: '#a5b4fc', max: 100, zero: true },
+  { id: 'muscleMass', label: 'Мышечная масса', unit: 'кг', group: 'main', chart: 'mass', color: '#a5b4fc', max: 400 },
+  { id: 'waterPercent', label: 'Вода', unit: '%', group: 'main', chart: 'percent', color: '#7dd3fc', max: 100, zero: true },
+  { id: 'waist', label: 'Живот на уровне пупка', short: 'Живот', unit: 'см', group: 'size', chart: 'size', color: '#34d399', max: 400 },
+  { id: 'chest', label: 'Грудь', unit: 'см', group: 'size', chart: 'size', color: '#7dd3fc', max: 400 },
+  { id: 'hips', label: 'Бёдра (обхват таза)', short: 'Бёдра', unit: 'см', group: 'size', chart: 'size', color: '#fbbf24', max: 400 },
+  { id: 'bicepsLeft', label: 'Бицепс слева', unit: 'см', group: 'size', chart: 'size', color: '#a5b4fc', max: 150 },
+  { id: 'bicepsRight', label: 'Бицепс справа', unit: 'см', group: 'size', chart: 'size', color: '#f9a8d4', max: 150 },
+  { id: 'thighLeft', label: 'Бедро слева', unit: 'см', group: 'size', chart: 'size', color: '#fb923c', max: 200 },
+  { id: 'thighRight', label: 'Бедро справа', unit: 'см', group: 'size', chart: 'size', color: '#c4b5fd', max: 200 },
+  { id: 'neck', label: 'Шея', unit: 'см', group: 'size', chart: 'size', color: '#67e8f9', max: 150 },
+  { id: 'boneMass', label: 'Костная масса', unit: 'кг', group: 'extra', chart: 'mass', color: '#fbbf24', max: 100 },
+  { id: 'visceralFat', label: 'Висцеральный жир', unit: 'ур.', group: 'extra', chart: 'visceral', color: '#fb923c', max: 100 },
+  { id: 'bmr', label: 'Основной обмен', unit: 'ккал', group: 'extra', chart: 'bmr', color: '#7dd3fc', max: 10000 },
+];
+
+export function normalizeMeasurement(value) {
+  if (!isRecord(value)) throw new Error('Замеры должны быть объектом.');
+  const result = {};
+  for (const field of MEASUREMENT_FIELDS) {
+    const raw = value[field.id];
+    if (raw === undefined || raw === null || (typeof raw === 'string' && !raw.trim())) continue;
+    const parsed = number(raw);
+    if (!Number.isFinite(parsed) || parsed < 0 || (!field.zero && parsed === 0) || parsed > field.max) {
+      throw new Error(`${field.label}: укажите число ${field.zero ? 'от 0' : 'больше 0'} до ${field.max} ${field.unit}.`);
+    }
+    result[field.id] = parsed;
+  }
+  if (!Object.keys(result).length) throw new Error('Заполните хотя бы один показатель.');
+  if (value.note !== undefined && value.note !== null) {
+    if (typeof value.note !== 'string' || value.note.length > 500) throw new Error('Заметка: не больше 500 символов.');
+    if (value.note.trim()) result.note = value.note.trim();
+  }
+  return result;
+}
+
 export function number(value) {
   if (typeof value === 'number') return Number.isFinite(value) ? value : NaN;
   if (typeof value !== 'string') return NaN;
@@ -197,6 +236,10 @@ function normalizeLog(value, date, index) {
     foodName: value.foodName.trim(), grams, ...nutrients,
     createdAt: timestamp(value.createdAt),
   };
+  if (value.meal !== undefined && value.meal !== null && value.meal !== '') {
+    if (typeof value.meal !== 'string' || !value.meal.trim() || value.meal.length > 80) throw new Error(`${label}: название приёма пищи должно содержать от 1 до 80 символов.`);
+    log.meal = value.meal.trim();
+  }
   if (value.nutritionPer100 !== undefined) {
     if (!isRecord(value.nutritionPer100)) throw new Error(`${label}: неверные КБЖУ на 100 г.`);
     log.nutritionPer100 = Object.fromEntries(nutrientKeys.map(key => [key, validNumber(value.nutritionPer100[key], `${label}, ${nutrientLabels[key]} на 100 г`)]));
@@ -241,7 +284,16 @@ export function validateBackup(input) {
     });
     return [date, logs];
   }));
-  return { goals, foods, dailyLogs };
+  const rawFavorites = value.favorites ?? [];
+  if (!Array.isArray(rawFavorites) || rawFavorites.some(id => typeof id !== 'string')) throw new Error('Некорректный список избранных продуктов.');
+  const favorites = [...new Set(rawFavorites)].filter(id => foodIds.has(id));
+  const rawMeasurements = value.measurements ?? {};
+  if (!isRecord(rawMeasurements)) throw new Error('Замеры должны быть объектом с датами.');
+  const measurements = Object.fromEntries(Object.entries(rawMeasurements).map(([date, record]) => {
+    parseDate(date);
+    return [date, normalizeMeasurement(record)];
+  }));
+  return { goals, foods, dailyLogs, favorites, measurements };
 }
 
 function unwrapProducts(value, depth = 0) {
@@ -325,6 +377,21 @@ export function productUsage(dailyLogs) {
     }
   }
   return usage;
+}
+
+export const MEAL_NAMES = ['Завтрак', 'Обед', 'Ужин', 'Перекус', 'Приём пищи'];
+export const mealKey = name => labelOf(name || '').trim();
+
+export function groupMeals(logs) {
+  const groups = new Map();
+  for (const log of logs) {
+    const key = mealKey(log.meal);
+    if (!groups.has(key)) groups.set(key, { key, name: log.meal || 'Без группы', meal: log.meal || '', logs: [], totals: Object.fromEntries(nutrientKeys.map(key => [key, 0])) });
+    const group = groups.get(key);
+    group.logs.push(log);
+    for (const key of nutrientKeys) group.totals[key] += log[`total${key[0].toUpperCase()}${key.slice(1)}`];
+  }
+  return [...groups.values()];
 }
 
 export function rankFoods(foods, dailyLogs, { query = '', category = 'all', mode = 'all', limit } = {}) {

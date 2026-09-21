@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DEFAULT_GOALS, DEFAULT_FOODS, number, calculate, localDate, shiftDate,
-  normalizeFood, validateBackup, parseProducts, productUsage, rankFoods,
+  normalizeFood, validateBackup, parseProducts, productUsage, rankFoods, groupMeals,
 } from './core.mjs';
 
 const nutrients = { calories: 113, protein: 23.6, fat: 1.9, carbs: 0 };
@@ -107,6 +107,19 @@ test('all shipped products pass backup validation with zero nutrient values inta
   const restored = validateBackup({ goals: DEFAULT_GOALS, foods: DEFAULT_FOODS, dailyLogs: {} });
   assert.equal(restored.foods.length, DEFAULT_FOODS.length);
   assert.equal(restored.foods[0].carbs, 0);
+});
+
+test('meal labels survive backups and group nutrients without changing saved food snapshots', () => {
+  const state = validateBackup(backup({ dailyLogs: { '2026-09-20': [log({ meal: 'Обед' }), log({ id: 'second', meal: 'обед', grams: 100, totalCalories: 113, totalProtein: 23.6, totalFat: 1.9, totalCarbs: 0 }), log({ id: 'old' })] } }));
+  const groups = groupMeals(state.dailyLogs['2026-09-20']);
+  assert.equal(groups.length, 2);
+  assert.equal(groups[0].name, 'Обед');
+  assert.equal(groups[0].logs.length, 2);
+  assert.equal(groups[0].totals.calories, 283);
+  assert.equal(groups[0].totals.protein, 59);
+  assert.equal(groups[1].name, 'Без группы');
+  assert.deepEqual(validateBackup(JSON.stringify({ version: 12, ...state })), state);
+  assert.throws(() => validateBackup(backup({ dailyLogs: { '2026-09-20': [log({ meal: ['Обед'] })] } })));
 });
 
 test('category inference distinguishes liver, cookies and honey; explicit categories prevail', () => {

@@ -21,13 +21,28 @@ export function applyEvent(state, event) {
         ...state.foods.map(food => changes.get(food.id) || food)
       ] };
     }
-    case 'deleteFood': return { ...state, foods: state.foods.filter(food => food.id !== p.id) };
+    case 'deleteFood': return { ...state, foods: state.foods.filter(food => food.id !== p.id), favorites: (state.favorites || []).filter(id => id !== p.id) };
+    case 'favorite': {
+      if (typeof p.enabled !== 'boolean' || !state.foods.some(food => food.id === p.id)) throw new Error('Этот продукт уже удалён из базы.');
+      const favorites = (state.favorites || []).filter(id => id !== p.id);
+      return { ...state, favorites: p.enabled ? [p.id, ...favorites] : favorites };
+    }
+    case 'measurement': {
+      const record = { ...(state.measurements?.[p.date] || {}) };
+      for (const [key, value] of Object.entries(p.patch)) {
+        if (value === null || value === '') delete record[key];
+        else record[key] = value;
+      }
+      return { ...state, measurements: { ...state.measurements, [p.date]: record } };
+    }
+    case 'deleteMeasurement': return { ...state, measurements: Object.fromEntries(Object.entries(state.measurements || {}).filter(([date]) => date !== p.date)) };
     case 'log': {
       const logs = state.dailyLogs[p.date] || [];
       return { ...state, dailyLogs: { ...state.dailyLogs, [p.date]: logs.some(log => log.id === p.log.id)
         ? logs.map(log => log.id === p.log.id ? p.log : log) : [...logs, p.log] } };
     }
     case 'logs': return p.logs.reduce((next, log) => applyEvent(next, { type: 'log', payload: { date: p.date, log } }), state);
+    case 'assignMeal': return { ...state, dailyLogs: { ...state.dailyLogs, [p.date]: (state.dailyLogs[p.date] || []).map(log => p.ids.includes(log.id) ? { ...log, meal: p.meal } : log) } };
     case 'deleteLog': return { ...state, dailyLogs: {
       ...state.dailyLogs, [p.date]: (state.dailyLogs[p.date] || []).filter(log => log.id !== p.id)
     } };
