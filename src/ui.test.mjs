@@ -179,7 +179,7 @@ test('product CRUD, decimal meals and date navigation preserve saved diary snaps
   assert.equal(reloaded.document.querySelectorAll('.diary-row').length, 1);
 });
 
-test('global search, favorite stars and frequent products stay independent of management filters', async t => {
+test('global search, favorite toggles and management filters stay independent', async t => {
   const apple = food('apple', 'Яблоко', { category: 'fruits' });
   const chicken = food('chicken', 'Куриное филе', { category: 'meat' });
   const grain = food('grain', 'Гречка варёная', { category: 'grains' });
@@ -188,7 +188,7 @@ test('global search, favorite stars and frequent products stay independent of ma
     '2026-09-20': [meal('3', chicken)],
   }) });
   const main = ui.query('main');
-  assert.deepEqual(ui.rows(), ['Куриное филе', 'Яблоко']);
+  assert.deepEqual(ui.rows(), ['Яблоко', 'Куриное филе', 'Гречка варёная']);
   assert.equal(main.querySelector('.food-results'), null);
   await ui.click(ui.button('★ Избранное', main));
   assert.deepEqual(ui.rows(), []);
@@ -203,13 +203,12 @@ test('global search, favorite stars and frequent products stay independent of ma
   await ui.click(ui.button('Убрать Гречка варёная из избранного', main));
   assert.deepEqual(ui.rows(), []);
   assert.equal(ui.document.querySelectorAll('.selected-portion').length, 1);
-  await ui.click(ui.button('Часто используемые', main));
-  assert.deepEqual(ui.rows(), ['Куриное филе', 'Яблоко']);
+  await ui.click(ui.button('★ Избранное', main));
+  assert.deepEqual(ui.rows(), ['Яблоко', 'Куриное филе', 'Гречка варёная']);
   await ui.click(ui.button(/Настройки/));
   await ui.click(ui.button(/Управлять продуктами/, ui.topDialog()));
   const settings = ui.topDialog();
-  await ui.click(ui.button('Часто используемые', settings));
-  assert.deepEqual(ui.rows(settings), ['Куриное филе', 'Яблоко']);
+  assert.deepEqual(ui.rows(settings), ['Яблоко', 'Куриное филе', 'Гречка варёная']);
   await ui.input(ui.query('.category-row select', settings), 'fruits');
   assert.deepEqual(ui.rows(settings), ['Яблоко']);
   await ui.click(ui.button('Добавить Яблоко в избранное', settings));
@@ -224,7 +223,7 @@ test('quick search adds multiple portions across searches and tabs in one saved 
   const egg = food('egg', 'Яйцо', { calories: 143, protein: 12.6, fat: 9.5, carbs: 0.7 });
   const fish = food('fish', 'Минтай', { calories: 72, protein: 15.9, fat: 0.9, carbs: 0 });
   const ui = await mount(t, { initial: data([cucumber, egg, fish]) });
-  assert.equal(ui.document.querySelector('main .food-select'), null);
+  assert.equal(ui.document.querySelectorAll('main .food-select').length, 3);
   await ui.input(ui.query('main input[type="search"]'), 'Огурец');
   await ui.click(ui.button('Выбрать Огурец'));
   await ui.input(ui.query('input[aria-label="Вес Огурец, г"]'), '150,5');
@@ -503,4 +502,123 @@ test('new products can be added directly from the diary manually or as JSON with
   await ui.submit(ui.query('form', ui.topDialog()));
   assert.match(ui.query('[role="alert"]', ui.topDialog()).textContent, /уже есть/);
   assert.equal(ui.state().foods.length, 3, 'Duplicate JSON never imports a partial batch');
+});
+
+test('compact picker pages six newest foods, toggles both filters off and clears search', async t => {
+  const foods = Array.from({ length: 13 }, (_, index) => food(`f${index}`, `Продукт ${index}`, { createdAt: new Date(2026, 8, index + 1).toISOString() }));
+  const ui = await mount(t, { initial: { ...data(foods), favorites: ['f1', 'f7'] } });
+  assert.deepEqual(ui.rows(), ['Продукт 7', 'Продукт 1']);
+  await ui.click(ui.button('★ Избранное'));
+  assert.equal(ui.button('★ Избранное').getAttribute('aria-pressed'), 'false');
+  assert.deepEqual(ui.rows(), [12, 11, 10, 9, 8, 7].map(index => `Продукт ${index}`));
+  assert.equal(ui.button('Предыдущие 6').disabled, true);
+  await ui.click(ui.button('Выбрать Продукт 12'));
+  await ui.click(ui.button('Следующие 6'));
+  assert.deepEqual(ui.rows(), [6, 5, 4, 3, 2, 1].map(index => `Продукт ${index}`));
+  const search = ui.query('main input[type="search"]');
+  await ui.input(search, 'Продукт 11');
+  assert.deepEqual(ui.rows(), ['Продукт 11']);
+  await ui.click(ui.button('Очистить поиск'));
+  assert.equal(search.value, '');
+  assert.equal(ui.document.activeElement === search, true);
+  assert.equal(ui.rows().length, 6);
+  assert.equal(ui.button('Выбрать Продукт 12').getAttribute('aria-pressed'), 'true');
+  await ui.click(ui.button('Готовые'));
+  assert.equal(ui.rows().length, 0);
+  await ui.click(ui.button('Готовые'));
+  assert.equal(ui.button('Готовые').getAttribute('aria-pressed'), 'false');
+  assert.equal(ui.rows().length, 6);
+  assert.equal(ui.document.body.textContent.includes('Часто используемые'), false);
+});
+
+test('saved shakes allow per-meal ingredient changes without changing the template, then edit and delete', async t => {
+  const powder = food('powder', 'Протеин', { calories: 400, protein: 80, fat: 5, carbs: 8 });
+  const water = food('water', 'Вода', { calories: 0, protein: 0, fat: 0, carbs: 0 });
+  const chia = food('chia', 'Семена чиа', { calories: 480, protein: 16, fat: 30, carbs: 8 });
+  const ui = await mount(t, { initial: data([powder, water, chia]) });
+  for (const [name, grams] of [['Протеин', '30'], ['Вода', '250'], ['Семена чиа', '10']]) {
+    await ui.click(ui.button(`Выбрать ${name}`));
+    await ui.input(ui.query(`input[aria-label="Вес ${name}, г"]`), grams);
+  }
+  await ui.click(ui.button('Сохранить состав как блюдо'));
+  await ui.input(ui.query('input', ui.topDialog()), 'Протеиновый коктейль');
+  await ui.submit(ui.query('form', ui.topDialog()));
+  assert.equal(ui.state().recipes.length, 1);
+  const template = ui.state().recipes[0];
+  assert.deepEqual(template.ingredients.map(item => item.grams), [30, 250, 10]);
+  assert.deepEqual(ui.state().dailyLogs, {});
+  assert.equal(ui.document.querySelectorAll('.selected-portion').length, 3, 'Saving a recipe preserves current portions');
+  await ui.submit(ui.query('.portion-form'));
+  await ui.click(ui.button('Готовые'));
+  await ui.click(ui.button('Выбрать блюдо Протеиновый коктейль'));
+  await ui.input(ui.query('input[aria-label="Вес Протеин, г"]'), '60');
+  await ui.click(ui.button('Убрать Семена чиа из выбранных'));
+  assert.match(ui.query('.portion-preview').textContent, /240 ккал/);
+  await ui.submit(ui.query('.portion-form'));
+  assert.deepEqual(ui.state().recipes[0], template);
+  const day = ui.query('input[type="date"]').value;
+  assert.deepEqual(ui.state().dailyLogs[day].slice(-2).map(log => [log.foodId, log.grams, log.totalCalories]), [['powder', 60, 240], ['water', 250, 0]]);
+  const stored = Array.from({ length: ui.window.localStorage.length }, (_, index) => {
+    const key = ui.window.localStorage.key(index); return [key, ui.window.localStorage.getItem(key)];
+  });
+  const reload = await mount(t, { storageEntries: stored });
+  await reload.click(reload.button('Готовые'));
+  await reload.click(reload.button('Выбрать блюдо Протеиновый коктейль'));
+  assert.equal(reload.query('input[aria-label="Вес Протеин, г"]').value, '30');
+  assert.equal(reload.document.querySelectorAll('.selected-portion').length, 3);
+  await reload.click(reload.button('Редактировать блюдо Протеиновый коктейль'));
+  await reload.input(reload.query('input[aria-label="Вес ингредиента Протеин, г"]', reload.topDialog()), '45,5');
+  await reload.submit(reload.query('form', reload.topDialog()));
+  assert.equal(reload.state().recipes[0].ingredients[0].grams, 45.5);
+  assert.equal(reload.query('input[aria-label="Вес Протеин, г"]').value, '30', 'Template editing does not overwrite an already selected portion');
+  const logs = reload.state().dailyLogs;
+  await reload.click(reload.button('Редактировать блюдо Протеиновый коктейль'));
+  await reload.click(reload.button('Удалить блюдо', reload.topDialog()));
+  await reload.click(reload.button('Удалить', reload.topDialog()));
+  assert.equal(reload.state().recipes.length, 0);
+  assert.deepEqual(reload.state().dailyLogs, logs);
+});
+
+test('new recipe constructor adds ingredients including a new zero-calorie product and rejects invalid weights', async t => {
+  const powder = food('powder', 'Протеин');
+  const ui = await mount(t, { initial: data([powder]) });
+  await ui.click(ui.button('Готовые'));
+  await ui.click(ui.button('＋ Создать блюдо'));
+  let dialog = ui.topDialog();
+  await ui.input(ui.query('form input', dialog), 'Коктейль с водой');
+  await ui.submit(ui.query('form', dialog));
+  assert.match(dialog.textContent, /хотя бы один ингредиент/);
+  await ui.click(ui.button('Выбрать Протеин', dialog));
+  await ui.input(ui.query('input[aria-label="Вес ингредиента Протеин, г"]', dialog), '0');
+  await ui.submit(ui.query('form', dialog));
+  assert.equal(ui.state().recipes.length, 0);
+  await ui.input(ui.query('input[aria-label="Вес ингредиента Протеин, г"]', dialog), '30');
+  await ui.click(ui.button('＋ Новый продукт', dialog));
+  const form = ui.query('.recipe-picker form', dialog);
+  await ui.input(ui.query('input[type="text"]', form), 'Вода');
+  for (const input of form.querySelectorAll('.macro-inputs input')) await ui.input(input, '0');
+  await ui.submit(form);
+  await ui.input(ui.query('input[aria-label="Вес ингредиента Вода, г"]', dialog), '250');
+  await ui.submit(ui.query('form', dialog));
+  assert.equal(ui.state().recipes.length, 1);
+  assert.deepEqual(ui.state().recipes[0].ingredients.map(item => [item.foodName, item.grams]), [['Протеин', 30], ['Вода', 250]]);
+  assert.deepEqual(ui.state().dailyLogs, {});
+  assert.equal(ui.document.querySelector('.portion-form') === null, true);
+});
+
+test('missing recipe ingredients cannot silently disappear or save a partial selection', async t => {
+  const powder = food('powder', 'Протеин');
+  const recipe = { id: 'shake', name: 'Коктейль', ingredients: [{ foodId: 'powder', foodName: 'Протеин', grams: 30 }, { foodId: 'missing', foodName: 'Семена чиа', grams: 10 }] };
+  const ui = await mount(t, { initial: { ...data([powder]), recipes: [recipe] } });
+  await ui.click(ui.button('Готовые'));
+  await ui.click(ui.button('Выбрать блюдо Коктейль'));
+  assert.equal(ui.document.querySelector('.portion-form') === null, true);
+  const dialog = ui.topDialog();
+  assert.match(dialog.textContent, /Удалён из базы/);
+  await ui.submit(ui.query('form', dialog));
+  assert.equal(ui.state().recipes[0].ingredients.length, 2);
+  await ui.click(ui.button('Убрать ингредиент Семена чиа', dialog));
+  await ui.submit(ui.query('form', dialog));
+  await ui.click(ui.button('Выбрать блюдо Коктейль'));
+  assert.equal(ui.query('input[aria-label="Вес Протеин, г"]').value, '30');
 });

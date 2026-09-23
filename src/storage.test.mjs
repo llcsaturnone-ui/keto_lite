@@ -98,3 +98,21 @@ test('invalid and failed measurement saves leave all previous records intact', (
   assert.throws(() => store.commit('measurement', { date: '2026-09-21', patch: { weight: 92 } }), /не применено/);
   assert.deepEqual(store.read(), before);
 });
+
+test('recipe templates migrate, round-trip in backups and preserve deleted ingredient references', () => {
+  const storage = memory(), store = createStore(storage);
+  assert.deepEqual(store.read().recipes, []);
+  store.commit('foods', [food('protein')]);
+  const recipe = { id: 'shake', name: 'Коктейль', createdAt: '2026-09-23T10:00:00Z', ingredients: [{ foodId: 'protein', foodName: 'Протеин', grams: 30 }] };
+  store.commit('recipe', recipe);
+  const before = store.read();
+  store.commit('replace', JSON.stringify(before));
+  assert.deepEqual(store.read(), before);
+  assert.throws(() => store.commit('recipe', { ...recipe, ingredients: [{ ...recipe.ingredients[0], grams: -1 }] }));
+  assert.throws(() => store.commit('recipe', { ...recipe, ingredients: [] }));
+  assert.deepEqual(store.read(), before);
+  store.commit('deleteFood', { id: 'protein' });
+  assert.deepEqual(store.read().recipes, before.recipes, 'Missing ingredients remain visible for deliberate repair');
+  store.commit('deleteRecipe', { id: 'shake' });
+  assert.deepEqual(store.read().recipes, []);
+});

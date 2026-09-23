@@ -14,6 +14,9 @@ export function applyEvent(state, event) {
   switch (event.type) {
     case 'replace': return validateBackup(p);
     case 'goals': return { ...state, goals: p };
+    case 'recipe': return { ...state, recipes: (state.recipes || []).some(recipe => recipe.id === p.id)
+      ? state.recipes.map(recipe => recipe.id === p.id ? p : recipe) : [p, ...(state.recipes || [])] };
+    case 'deleteRecipe': return { ...state, recipes: (state.recipes || []).filter(recipe => recipe.id !== p.id) };
     case 'foods': {
       const changes = new Map(p.map(food => [food.id, food]));
       return { ...state, foods: [

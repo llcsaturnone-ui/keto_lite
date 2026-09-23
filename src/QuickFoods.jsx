@@ -7,29 +7,55 @@ export function FavoriteButton({ food, active, onToggle }) {
   return <button type="button" className={`favorite-button ${active ? 'active' : ''}`} aria-label={`${active ? 'Убрать' : 'Добавить'} ${food.name} ${active ? 'из избранного' : 'в избранное'}`} aria-pressed={active} onClick={() => onToggle(food.id, !active)}><span aria-hidden="true">{active ? '★' : '☆'}</span></button>;
 }
 
-export function QuickFoods({ foods, dailyLogs, favorites, selected, onSelect, onFavorite, onAdd }) {
+export function SearchField({ value, onChange, label = 'Поиск продукта по всей базе', placeholder = 'Быстрый поиск продукта…' }) {
+  const ref = useRef(null);
+  return <div className="search-label"><label><span className="sr-only">{label}</span><input ref={ref} type="search" placeholder={placeholder} value={value} onChange={event => onChange(event.target.value)} autoComplete="off" /></label>{value !== '' && <button type="button" className="search-clear" aria-label="Очистить поиск" onClick={() => { onChange(''); ref.current?.focus(); }}>×</button>}</div>;
+}
+
+export function QuickFoods({ foods, favorites, selected = [], onSelect, onFavorite, onAdd, recipes = [], onRecipe, onEditRecipe, onCreateRecipe }) {
   const [query, setQuery] = useState('');
-  const [mode, setMode] = useState(() => favorites.length ? 'favorites' : 'frequent');
-  const track = useRef(null);
-  const searching = Boolean(query.trim());
+  const [mode, setMode] = useState(() => favorites.length ? 'favorites' : 'all');
+  const [page, setPage] = useState(0);
+  const touch = useRef(null);
+  const ready = mode === 'recipes';
   const result = useMemo(() => {
-    if (query.trim()) return rankFoods(foods, dailyLogs, { query });
-    if (mode === 'frequent') return rankFoods(foods, dailyLogs, { mode: 'frequent' });
-    return favorites.map(id => foods.find(food => food.id === id)).filter(Boolean);
-  }, [foods, dailyLogs, favorites, mode, query]);
-  useEffect(() => { if (track.current) track.current.scrollLeft = 0; }, [query, mode]);
+    if (mode === 'recipes') {
+      const terms = query.trim().toLocaleLowerCase('ru').replace(/ё/g, 'е').split(/\s+/).filter(Boolean);
+      return [...recipes].filter(recipe => {
+        const text = [recipe.name, ...recipe.ingredients.map(item => foods.find(food => food.id === item.foodId)?.name || item.foodName)].join(' ').toLocaleLowerCase('ru').replace(/ё/g, 'е');
+        return terms.every(term => text.includes(term));
+      }).sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0));
+    }
+    return rankFoods(foods, {}, { query, mode: 'recent' }).filter(food => mode !== 'favorites' || favorites.includes(food.id));
+  }, [foods, favorites, recipes, mode, query]);
+  const pages = Math.max(1, Math.ceil(result.length / 6));
+  const currentPage = Math.min(page, pages - 1);
+  useEffect(() => setPage(0), [query, mode]);
+  useEffect(() => setPage(current => Math.min(current, pages - 1)), [pages]);
+  const modes = [['favorites', 'Избранное'], ...(onCreateRecipe ? [['recipes', 'Готовые']] : [])];
+  function changeQuery(value) { setQuery(value); if (mode !== 'recipes' && value) setMode('all'); }
+  function movePage(direction) { setPage(Math.max(0, Math.min(pages - 1, currentPage + direction))); }
   return <div className="quick-foods">
-    <label className="search-label"><span className="sr-only">Поиск продукта по всей базе</span><input type="search" placeholder="Быстрый поиск продукта…" value={query} onChange={event => setQuery(event.target.value)} autoComplete="off" /></label>
-    <div className="quick-food-modes" role="group" aria-label="Быстрый выбор продуктов">{[['favorites', 'Избранное'], ['frequent', 'Часто используемые']].map(([id, label]) => <button type="button" key={id} className={`chip ${!searching && mode === id ? 'active' : ''}`} aria-pressed={!searching && mode === id} onClick={() => { setMode(id); setQuery(''); }}>{id === 'favorites' && <span aria-hidden="true">★ </span>}{label}</button>)}</div>
-    <div className="quick-food-caption"><span>{searching ? `Найдено: ${result.length}` : mode === 'favorites' ? `Избранных: ${result.length}` : `Продуктов: ${result.length}`}</span>{result.length > 1 && <span>Листайте вбок →</span>}</div>
-    {!result.length ? <div className="quick-food-empty"><p>{searching ? 'Ничего не найдено. Попробуйте другое название.' : mode === 'favorites' ? 'Найдите продукт и нажмите ☆ — он появится здесь.' : 'Здесь появятся продукты, которые вы чаще добавляете в дневник. Начните с поиска.'}</p>{(!foods.length || searching) && <button type="button" className="text-button" onClick={onAdd}>＋ Новый продукт</button>}</div> : <div ref={track} className="food-carousel" tabIndex="0" role="region" aria-label={searching ? 'Результаты поиска продуктов' : mode === 'favorites' ? 'Избранные продукты' : 'Часто используемые продукты'}>
-      {result.map(food => <article className={`food-tile ${selected.includes(food.id) ? 'selected' : ''}`} key={food.id}>
-        <FavoriteButton food={food} active={favorites.includes(food.id)} onToggle={onFavorite} />
-        <button type="button" className="food-select" aria-label={`Выбрать ${food.name}`} aria-pressed={selected.includes(food.id)} onClick={() => onSelect(food)}>
-          <span className="food-title" title={food.name}>{food.name}</span><span className="food-tile-calories">{format(food.calories)} <small>ккал / 100 г</small></span><span className="food-tile-macros">Б {format(food.protein)} · Ж {format(food.fat)} · У {format(food.carbs)}</span><span className="food-tile-action">{selected.includes(food.id) ? '✓ Выбрано' : '＋ Выбрать'}</span>
+    <SearchField value={query} onChange={changeQuery} label={ready ? 'Поиск готового блюда' : 'Поиск продукта по всей базе'} placeholder={ready ? 'Найти готовое блюдо…' : 'Быстрый поиск продукта…'} />
+    <div className="quick-food-modes" role="group" aria-label="Быстрый выбор продуктов">{modes.map(([id, label]) => <button type="button" key={id} className={`chip ${mode === id ? 'active' : ''}`} aria-pressed={mode === id} onClick={() => { setMode(current => current === id ? 'all' : id); setQuery(''); }}>{id === 'favorites' && <span aria-hidden="true">★ </span>}{label}</button>)}</div>
+    <div className="quick-food-caption"><span>{query.trim() ? `Найдено: ${result.length}` : ready ? `Блюд: ${result.length}` : mode === 'favorites' ? `Избранных: ${result.length}` : `Все продукты: ${result.length}`}</span>{ready ? <button type="button" className="text-button" onClick={onCreateRecipe}>＋ Создать блюдо</button> : <span>Новые сверху · на 100 г</span>}</div>
+    {!result.length ? <div className="quick-food-empty"><p>{query.trim() ? 'Ничего не найдено. Попробуйте другое название.' : ready ? 'Сохраните состав блюда, чтобы выбирать все ингредиенты сразу.' : mode === 'favorites' ? 'Найдите продукт и нажмите ☆ — он появится здесь.' : 'Добавьте первый продукт в базу.'}</p>{!ready && (!foods.length || query.trim()) && onAdd && <button type="button" className="text-button" onClick={onAdd}>＋ Новый продукт</button>}</div> : <div className="food-carousel" role="region" aria-label={ready ? 'Готовые блюда' : mode === 'favorites' ? 'Избранные продукты' : 'Все продукты'} onTouchStart={event => {
+      if (event.touches.length === 1) touch.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+      else touch.current = null;
+    }} onTouchCancel={() => { touch.current = null; }} onTouchEnd={event => {
+      const start = touch.current; touch.current = null;
+      if (!start || !event.changedTouches.length) return;
+      const dx = event.changedTouches[0].clientX - start.x, dy = event.changedTouches[0].clientY - start.y;
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) movePage(dx < 0 ? 1 : -1);
+    }}>
+      {result.slice(currentPage * 6, currentPage * 6 + 6).map(item => <article className={`food-tile ${!ready && selected.includes(item.id) ? 'selected' : ''}`} key={item.id}>
+        <button type="button" className="food-select" aria-label={`Выбрать ${ready ? 'блюдо ' : ''}${item.name}`} aria-pressed={ready ? undefined : selected.includes(item.id)} onClick={() => ready ? onRecipe(item) : onSelect(item)}>
+          <span className="food-title" title={item.name}>{item.name}</span><span className="food-tile-calories">{ready ? <small>Состав: {item.ingredients.length}</small> : <>{format(item.calories)} <small>ккал</small></>}</span>
         </button>
+        {ready ? <button type="button" className="tile-edit" aria-label={`Редактировать блюдо ${item.name}`} onClick={() => onEditRecipe(item)}>✎</button> : <FavoriteButton food={item} active={favorites.includes(item.id)} onToggle={onFavorite} />}
       </article>)}
     </div>}
+    {pages > 1 && <nav className="food-pagination" aria-label={ready ? 'Страницы готовых блюд' : 'Страницы продуктов'}><button type="button" className="icon-button" aria-label="Предыдущие 6" disabled={currentPage === 0} onClick={() => movePage(-1)}>‹</button><span aria-live="polite">{currentPage * 6 + 1}–{Math.min((currentPage + 1) * 6, result.length)} из {result.length}</span><button type="button" className="icon-button" aria-label="Следующие 6" disabled={currentPage === pages - 1} onClick={() => movePage(1)}>›</button></nav>}
   </div>;
 }
 

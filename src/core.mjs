@@ -252,6 +252,21 @@ function normalizeLog(value, date, index) {
   return log;
 }
 
+export function normalizeRecipe(value) {
+  if (!isRecord(value) || typeof value.name !== 'string' || !value.name.trim() || value.name.trim().length > 100) throw new Error('Укажите название блюда: от 1 до 100 символов.');
+  if (!Array.isArray(value.ingredients) || !value.ingredients.length) throw new Error('Добавьте хотя бы один ингредиент.');
+  const ids = new Set();
+  const ingredients = value.ingredients.map(item => {
+    if (!isRecord(item)) throw new Error('Некорректный ингредиент блюда.');
+    const foodId = identifier(item.foodId, 'Ингредиент', { required: true });
+    if (ids.has(foodId)) throw new Error('Ингредиент повторяется в блюде.');
+    ids.add(foodId);
+    if (typeof item.foodName !== 'string' || !item.foodName.trim()) throw new Error('У ингредиента отсутствует название.');
+    return { foodId, foodName: item.foodName.trim(), grams: validNumber(item.grams, `«${item.foodName}», вес`, { positive: true }) };
+  });
+  return { id: identifier(value.id, 'Блюдо', { required: true }), name: value.name.trim(), ingredients, createdAt: timestamp(value.createdAt) };
+}
+
 /** Validate a complete backup before returning any replacement state. Never mutates its input. */
 export function validateBackup(input) {
   let value = input;
@@ -293,7 +308,16 @@ export function validateBackup(input) {
     parseDate(date);
     return [date, normalizeMeasurement(record)];
   }));
-  return { goals, foods, dailyLogs, favorites, measurements };
+  const rawRecipes = value.recipes ?? [];
+  if (!Array.isArray(rawRecipes)) throw new Error('Готовые блюда должны быть массивом.');
+  const recipeIds = new Set();
+  const recipes = rawRecipes.map(item => {
+    const recipe = normalizeRecipe(item);
+    if (recipeIds.has(recipe.id)) throw new Error('Повторяющийся идентификатор готового блюда.');
+    recipeIds.add(recipe.id);
+    return recipe;
+  });
+  return { goals, foods, dailyLogs, favorites, measurements, recipes };
 }
 
 function unwrapProducts(value, depth = 0) {

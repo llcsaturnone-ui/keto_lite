@@ -1,10 +1,11 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { CATEGORIES, localDate, shiftDate, displayDate, makeId, number, round,
-  calculate, normalizeFood, validateBackup, parseProducts, rankFoods, productUsage, groupMeals, mealKey } from './core.mjs';
+  calculate, normalizeFood, validateBackup, parseProducts, rankFoods, groupMeals, mealKey } from './core.mjs';
 import { createStore, BASE_KEY, EVENT_PREFIX } from './storage.mjs';
 import { Progress, MeasurementForm } from './Progress.jsx';
-import { QuickFoods, FavoriteButton, QuickProductForm } from './QuickFoods.jsx';
+import { QuickFoods, FavoriteButton, QuickProductForm, SearchField } from './QuickFoods.jsx';
+import { RecipeForm } from './Recipes.jsx';
 import { MealPicker, MealNameForm } from './Meals.jsx';
 
 const macroFields = [['calories', 'Ккал', 'ккал'], ['protein', 'Белки', 'г'], ['fat', 'Жиры', 'г'], ['carbs', 'Углеводы', 'г']];
@@ -75,15 +76,14 @@ function FoodBrowser({ foods, dailyLogs, categories, favorites = [], onFavorite,
   const [category, setCategory] = useState('all');
   const [mode, setMode] = useState('all');
   const [limit, setLimit] = useState(8);
-  const used = useMemo(() => productUsage(dailyLogs), [dailyLogs]);
-  const result = useMemo(() => rankFoods(foods, dailyLogs, { query, category, mode }), [foods, dailyLogs, query, category, mode]);
+  const result = useMemo(() => rankFoods(foods, dailyLogs, { query, category, mode: 'recent' }).filter(food => mode !== 'favorites' || favorites.includes(food.id)), [foods, dailyLogs, favorites, query, category, mode]);
   const presentCategories = categories.filter(c => foods.some(food => food.category === c.id));
   useEffect(() => setLimit(8), [query, category, mode]);
   useEffect(() => { if (category !== 'all' && !foods.some(f => f.category === category)) setCategory('all'); }, [foods, category]);
   return <div className={`food-browser ${management ? '' : 'food-browser-picker'}`}>
-    <label className="search-label"><span className="sr-only">Поиск продукта по названию</span><input type="search" placeholder="Найти продукт…" value={query} onChange={e => setQuery(e.target.value)} autoComplete="off" /></label>
+    <SearchField value={query} onChange={setQuery} label="Поиск продукта по названию" placeholder="Найти продукт…" />
     <div className="filter-modes" role="group" aria-label="Порядок продуктов">
-      {[['all', 'Все'], ['recent', 'Недавно добавленные'], ['frequent', 'Часто используемые']].map(([id, title]) =>
+      {[['all', 'Все · новые сверху'], ['favorites', 'Избранное']].map(([id, title]) =>
         <button key={id} type="button" aria-pressed={mode === id} className={`chip ${mode === id ? 'active' : ''}`} onClick={() => setMode(id)}>{title}</button>)}
     </div>
     <div className="category-row"><label><span className="sr-only">Категория продуктов</span><select value={category} onChange={e => setCategory(e.target.value)}>
@@ -91,13 +91,13 @@ function FoodBrowser({ foods, dailyLogs, categories, favorites = [], onFavorite,
     </select></label><span className="muted result-count">{result.length} продуктов</span></div>
     <div className="food-results">
       {!result.length && <div className="empty-state">
-        <p>{!foods.length ? 'В базе пока нет продуктов' : mode === 'frequent' && !query && category === 'all' ? 'Здесь появятся продукты, которые вы добавляете в дневник' : 'Продукты не найдены'}</p>
+        <p>{!foods.length ? 'В базе пока нет продуктов' : 'Продукты не найдены'}</p>
         {!foods.length ? <button type="button" className="text-button" onClick={onAdd}>Добавить первый продукт</button> : <button type="button" className="text-button" onClick={() => { setQuery(''); setCategory('all'); setMode('all'); }}>Показать все продукты</button>}
       </div>}
       {result.slice(0, limit).map(food => <div className={`food-row ${selected.includes(food.id) ? 'selected' : ''}`} key={food.id}>
         <button type="button" className="food-select" onClick={() => management ? onEdit(food) : onSelect(food)} aria-pressed={management ? undefined : selected.includes(food.id)}>
           <span className="food-title">{food.name}</span>
-          <span className="food-meta">{categoryName(food.category)}{mode === 'frequent' && used[food.id] ? ` · ${used[food.id].count} записей` : ''}</span>
+          <span className="food-meta">{categoryName(food.category)}</span>
           <span className="food-macros"><b>{format(food.calories)} ккал</b><span>Б {format(food.protein)}</span><span>Ж {format(food.fat)}</span><span>У {format(food.carbs)}</span><small>на 100 г</small></span>
         </button>
         {management ? <div className="row-actions"><FavoriteButton food={food} active={favorites.includes(food.id)} onToggle={onFavorite} /><button type="button" className="icon-button" aria-label={`Редактировать ${food.name}`} onClick={() => onEdit(food)}>✎</button><button type="button" className="icon-button danger-text" aria-label={`Удалить ${food.name}`} onClick={() => onDelete(food)}>×</button></div>
@@ -203,6 +203,7 @@ function App() {
   const [portions, setPortions] = useState([]);
   const [tab, setTab] = useState('diary'), [measurementEdit, setMeasurementEdit] = useState(null);
   const [mealName, setMealName] = useState('Приём пищи'), [mealEdit, setMealEdit] = useState(null), [quickProduct, setQuickProduct] = useState(false);
+  const [recipeEdit, setRecipeEdit] = useState(null);
   const gramsRef = useRef(null), addRef = useRef(null);
   const noticeTimer = useRef(null);
 
@@ -253,9 +254,9 @@ function App() {
     finally { if (request === backupRequest.current) setBackupLoading(false); }
   }
   function cancelBackup() { backupRequest.current++; setBackup(null); setBackupName(''); setBackupLoading(false); }
-  function saveBackup() { try { downloadJson({ version: 12, ...store.read(), exportedAt: new Date().toISOString() }, `nutrition-backup-${localDate()}.json`); } catch (e) { setError(e.message); } }
+  function saveBackup() { try { downloadJson({ version: 13, ...store.read(), exportedAt: new Date().toISOString() }, `nutrition-backup-${localDate()}.json`); } catch (e) { setError(e.message); } }
   function restore() {
-    try { const next = fatal ? store.recover(backup) : store.commit('replace', backup); setData(next); setFatal(''); cancelBackup(); setPortions([]); setMeasurementEdit(null); setMealEdit(null); setError(''); notify('Резервная копия восстановлена'); }
+    try { const next = fatal ? store.recover(backup) : store.commit('replace', backup); setData(next); setFatal(''); cancelBackup(); setPortions([]); setMeasurementEdit(null); setMealEdit(null); setRecipeEdit(null); setError(''); notify('Резервная копия восстановлена'); }
     catch (e) { setError(e.message); }
   }
   const categories = useMemo(() => {
@@ -270,7 +271,7 @@ function App() {
     {error && <p role="alert" className="error">{error}</p>}
   </section></main>;
 
-  const { goals, foods, dailyLogs, favorites, measurements } = data;
+  const { goals, foods, dailyLogs, favorites, measurements, recipes } = data;
   const toggleFavorite = (id, enabled) => doAction('favorite', { id, enabled });
   function openMeasurement(day) {
     try { setMeasurementEdit({ date: day, initial: store.read().measurements[day] || {} }); }
@@ -290,7 +291,7 @@ function App() {
   const mealGroups = groupMeals(sortedLogs);
   const mealNames = mealGroups.map(group => group.meal).filter(Boolean);
 
-  function quickSaveFoods(items, selectAfter) {
+  function createFoods(items) {
     const fresh = store.read();
     const known = new Set(fresh.foods.map(food => mealKey(food.name)));
     const createdAt = new Date().toISOString();
@@ -301,6 +302,10 @@ function App() {
       return { ...food, id: makeId(), createdAt };
     });
     commit('foods', pending);
+    return pending;
+  }
+  function quickSaveFoods(items, selectAfter) {
+    const pending = createFoods(items);
     if (selectAfter) setPortions(current => [...current, ...pending.map(food => ({ id: food.id, name: food.name, grams: '100' }))]);
     setQuickProduct(false);
     notify(selectAfter ? 'Продукты добавлены. Укажите вес порций.' : `Добавлено продуктов: ${pending.length}`);
@@ -318,6 +323,40 @@ function App() {
       ? current.filter(portion => portion.id !== food.id)
       : [...current, { id: food.id, name: food.name, grams: '100' }]);
     setError('');
+  }
+  function selectRecipe(item) {
+    try {
+      const fresh = store.read();
+      const recipe = fresh.recipes.find(value => value.id === item.id);
+      if (!recipe) throw new Error('Это блюдо уже удалено.');
+      const next = portions.map(portion => ({ ...portion }));
+      for (const ingredient of recipe.ingredients) {
+        const food = fresh.foods.find(food => food.id === ingredient.foodId);
+        if (!food) { setRecipeEdit(recipe); throw new Error(`«${ingredient.foodName}» удалён из базы. Замените ингредиент в составе блюда.`); }
+        const existing = next.find(portion => portion.id === food.id);
+        if (existing) {
+          const grams = number(existing.grams);
+          if (!Number.isFinite(grams) || grams <= 0) throw new Error(`Сначала укажите вес выбранного продукта «${food.name}».`);
+          const amount = grams + ingredient.grams;
+          calculate(food, amount);
+          existing.grams = String(amount);
+        } else next.push({ id: food.id, name: food.name, grams: String(ingredient.grams) });
+      }
+      setPortions(next); setError('');
+      notify(`${recipe.name}: состав выбран. Можно изменить вес и ингредиенты.`);
+      setTimeout(() => addRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 0);
+    } catch (error) { setError(error.message); }
+  }
+  function saveRecipe(recipe) {
+    const fresh = store.read();
+    if (recipeEdit.id && !fresh.recipes.some(item => item.id === recipeEdit.id)) throw new Error('Это блюдо удалено в другой вкладке. Создайте его заново.');
+    if (fresh.recipes.some(item => item.id !== recipe.id && mealKey(item.name) === mealKey(recipe.name))) throw new Error('Блюдо с таким названием уже есть. Измените название или отредактируйте существующее.');
+    for (const item of recipe.ingredients) {
+      const food = fresh.foods.find(food => food.id === item.foodId);
+      if (!food) throw new Error(`«${item.foodName}» удалён из базы. Уберите или замените ингредиент.`);
+      calculate(food, item.grams);
+    }
+    commit('recipe', recipe); setRecipeEdit(null); notify('Блюдо сохранено в «Готовые»');
   }
   function addFoods(e) {
     e.preventDefault(); setError('');
@@ -358,7 +397,7 @@ function App() {
         })}</section>
 
         <section className="card" aria-labelledby="add-title"><div className="section-header"><h2 id="add-title">Добавить еду</h2><button className="text-button" onClick={() => setQuickProduct(true)}>＋ Продукт</button></div>
-          <QuickFoods foods={foods} dailyLogs={dailyLogs} favorites={favorites} selected={portions.map(portion => portion.id)} onSelect={toggleFood} onFavorite={toggleFavorite} onAdd={() => setQuickProduct(true)} />
+          <QuickFoods foods={foods} favorites={favorites} selected={portions.map(portion => portion.id)} onSelect={toggleFood} onFavorite={toggleFavorite} onAdd={() => setQuickProduct(true)} recipes={recipes} onRecipe={selectRecipe} onEditRecipe={setRecipeEdit} onCreateRecipe={() => setRecipeEdit({ name: '', ingredients: [] })} />
           {selected.length > 0 && <form ref={addRef} className="portion-form" onSubmit={addFoods}>
             <MealPicker value={mealName} onChange={setMealName} meals={mealNames} required />
             <div className="portion-list-heading"><span>Выбранные продукты</span><span>Вес, г</span></div>
@@ -368,6 +407,7 @@ function App() {
               <button type="button" className="icon-button" aria-label={`Убрать ${portion.food?.name || portion.name} из выбранных`} onClick={() => setPortions(current => current.filter(item => item.id !== portion.id))}>×</button>
             </div>)}</div>
             {preview && <p className="portion-preview"><span>Итого:</span><b>{format(preview.calories)} ккал</b><span>Б {format(preview.protein)}</span><span>Ж {format(preview.fat)}</span><span>У {format(preview.carbs)}</span></p>}
+            <button type="button" className="text-button full" onClick={() => setRecipeEdit({ name: '', ingredients: selected.map(item => ({ foodId: item.id, foodName: item.food?.name || item.name, grams: item.grams })) })}>Сохранить состав как блюдо</button>
             <button className="primary full add-portions" type="submit">Добавить в дневник · {selected.length}</button>
           </form>}
         </section>
@@ -380,7 +420,7 @@ function App() {
         </section>
         </div>
         <div hidden={tab !== 'progress'}><Progress records={measurements} date={date} onEdit={openMeasurement} onDelete={day => setConfirmation({ kind: 'measurement', date: day, item: { name: `Замеры за ${day.split('-').reverse().join('.')}` } })} /></div>
-        <footer>Данные сохраняются на этом устройстве.<button className="text-button" onClick={saveBackup}>Скачать резервную копию</button><span className="app-version">Версия 12 · Прогресс и избранное</span></footer>
+        <footer>Данные сохраняются на этом устройстве.<button className="text-button" onClick={saveBackup}>Скачать резервную копию</button><span className="app-version">Версия 13 · Готовые блюда</span></footer>
       </main>
     </div>
     <div className="notifications" aria-live="polite">{notice && <div className="toast">✓ {notice}</div>}{error && <div className="toast error" role="alert"><span>{error}</span><button type="button" className="icon-button" aria-label="Скрыть сообщение" onClick={() => setError('')}>×</button></div>}</div>
@@ -392,7 +432,7 @@ function App() {
         <section><div className="section-header"><h3>Мои продукты</h3><span className="count-badge">{foods.length}</span></div><p className="hint">Добавление, категории, редактирование и импорт.</p><button className="secondary full" onClick={() => setSettingsView('products')}>Управлять продуктами <span aria-hidden="true">→</span></button></section>
         <section><h3>Резервная копия</h3><p className="hint">Сохраните копию перед сменой браузера или устройства. Поддерживаются копии из прежней версии приложения.</p><div className="button-row"><button className="secondary" onClick={saveBackup}>Скачать</button><label className="file-button secondary">Загрузить<input type="file" accept=".json,application/json" onChange={e => { readBackup(e.target.files[0]); e.target.value = ''; }} /></label></div>
           {backupLoading && <p className="hint" role="status">Проверяю {backupName}…</p>}
-          {backup && <div className="backup-preview"><strong>Копия проверена</strong><p className="hint">{backupName}</p><p>{backup.foods.length} продуктов · {Object.values(backup.dailyLogs).flat().length} записей · {Object.keys(backup.measurements).length} дней замеров · {backup.favorites.length} избранных</p><p className="hint">Восстановление заменит продукты, дневник, цели, замеры и избранное данными из копии. Сначала можно скачать текущую копию.</p><div className="button-row"><button className="secondary" onClick={cancelBackup}>Отмена</button><button className="primary" onClick={restore}>Восстановить</button></div></div>}
+          {backup && <div className="backup-preview"><strong>Копия проверена</strong><p className="hint">{backupName}</p><p>{backup.foods.length} продуктов · {Object.values(backup.dailyLogs).flat().length} записей · {Object.keys(backup.measurements).length} дней замеров · {backup.favorites.length} избранных · {backup.recipes.length} блюд</p><p className="hint">Восстановление заменит продукты, дневник, цели, замеры, избранное и готовые блюда данными из копии. Сначала можно скачать текущую копию.</p><div className="button-row"><button className="secondary" onClick={cancelBackup}>Отмена</button><button className="primary" onClick={restore}>Восстановить</button></div></div>}
         </section>
       </div>}
       {settingsView === 'products' && <div className="form-stack"><div className="button-row"><button className="primary" onClick={openNew}>＋ Новый продукт</button><button className="secondary" onClick={() => setSettingsView('import')}>Импорт</button></div><FoodBrowser foods={foods} dailyLogs={dailyLogs} categories={categories} favorites={favorites} onFavorite={toggleFavorite} management onEdit={food => { setFoodDraft(food); setSettingsView('food'); }} onDelete={food => setConfirmation({ kind:'food', item:food })} onAdd={openNew} /></div>}
@@ -401,6 +441,7 @@ function App() {
       {error && <p className="error" role="alert">{error}</p>}
       {notice && <p className="success" role="status">{notice}</p>}
     </Modal>}
+    {recipeEdit && <Modal title={recipeEdit.id ? 'Редактировать блюдо' : 'Новое блюдо'} onClose={() => setRecipeEdit(null)}><RecipeForm initial={recipeEdit} foods={foods} favorites={favorites} onFavorite={toggleFavorite} onAddFoods={createFoods} onSave={saveRecipe} onCancel={() => setRecipeEdit(null)} onDelete={() => setConfirmation({ kind: 'recipe', item: recipeEdit })} /></Modal>}
     {quickProduct && <Modal title="Новый продукт" onClose={() => setQuickProduct(false)}><QuickProductForm onSave={quickSaveFoods} onCancel={() => setQuickProduct(false)} /></Modal>}
     {editLog && <Modal title="Редактировать запись" onClose={() => setEditLog(null)}><EditLog log={editLog.log} foods={foods} meals={groupMeals(dailyLogs[editLog.date] || []).map(group => group.meal)} onClose={() => setEditLog(null)} onSave={log => {
       const fresh = store.read();
@@ -414,7 +455,7 @@ function App() {
       commit('assignMeal', { date: mealEdit.date, ids, meal }); setMealEdit(null); notify('Приём пищи обновлён');
     }} /></Modal>}
     {measurementEdit && <Modal title="Замеры тела" onClose={() => setMeasurementEdit(null)}><MeasurementForm date={measurementEdit.date} initial={measurementEdit.initial} onCancel={() => setMeasurementEdit(null)} onSave={patch => { commit('measurement', { date: measurementEdit.date, patch }); setMeasurementEdit(null); notify('Замеры сохранены'); }} /></Modal>}
-    {confirmation && <Modal title={confirmation.kind === 'food' ? 'Удалить продукт?' : confirmation.kind === 'measurement' ? 'Удалить замеры?' : 'Удалить запись?'} onClose={() => setConfirmation(null)}><div className="form-stack"><p>«{confirmation.item.name || confirmation.item.foodName}»</p>{confirmation.kind === 'food' && <p className="hint">Записи об этом продукте в дневнике сохранятся.</p>}<div className="button-row"><button className="secondary" onClick={() => setConfirmation(null)}>Отмена</button><button className="danger" onClick={() => { if (doAction(confirmation.kind === 'food' ? 'deleteFood' : confirmation.kind === 'measurement' ? 'deleteMeasurement' : 'deleteLog', { id:confirmation.item.id, date:confirmation.date }, 'Удалено')) setConfirmation(null); }}>Удалить</button></div>{error && <p className="error" role="alert">{error}</p>}</div></Modal>}
+    {confirmation && <Modal title={confirmation.kind === 'recipe' ? 'Удалить блюдо?' : confirmation.kind === 'food' ? 'Удалить продукт?' : confirmation.kind === 'measurement' ? 'Удалить замеры?' : 'Удалить запись?'} onClose={() => setConfirmation(null)}><div className="form-stack"><p>«{confirmation.item.name || confirmation.item.foodName}»</p>{confirmation.kind === 'food' && <p className="hint">Записи об этом продукте в дневнике сохранятся.</p>}<div className="button-row"><button className="secondary" onClick={() => setConfirmation(null)}>Отмена</button><button className="danger" onClick={() => { if (doAction(confirmation.kind === 'recipe' ? 'deleteRecipe' : confirmation.kind === 'food' ? 'deleteFood' : confirmation.kind === 'measurement' ? 'deleteMeasurement' : 'deleteLog', { id:confirmation.item.id, date:confirmation.date }, 'Удалено')) { if (confirmation.kind === 'recipe') setRecipeEdit(null); setConfirmation(null); } }}>Удалить</button></div>{error && <p className="error" role="alert">{error}</p>}</div></Modal>}
   </>;
 }
 
