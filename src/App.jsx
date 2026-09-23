@@ -6,6 +6,7 @@ import { createStore, BASE_KEY, EVENT_PREFIX } from './storage.mjs';
 import { Progress, MeasurementForm } from './Progress.jsx';
 import { QuickFoods, FavoriteButton, QuickProductForm, SearchField } from './QuickFoods.jsx';
 import { RecipeForm } from './Recipes.jsx';
+import { GramsInput } from './GramsInput.jsx';
 import { MealPicker, MealNameForm } from './Meals.jsx';
 
 const macroFields = [['calories', 'Ккал', 'ккал'], ['protein', 'Белки', 'г'], ['fat', 'Жиры', 'г'], ['carbs', 'Углеводы', 'г']];
@@ -181,7 +182,7 @@ function EditLog({ log, foods, meals, onSave, onClose }) {
     } catch (e) { setError(e.message); }
   }}>
     <label><span>Продукт</span><select value={foodId} onChange={e => setFoodId(e.target.value)}><option value="">{log.foodName} · как записано</option>{[...foods].sort((a,b)=>a.name.localeCompare(b.name,'ru')).map(food => <option key={food.id} value={food.id}>{food.name}</option>)}</select></label>
-    <label><span>Вес, г</span><input autoFocus required type="text" inputMode="decimal" value={grams} onChange={e => setGrams(e.target.value)} /></label>
+    <label><span>Вес, г</span><GramsInput value={grams} onChange={setGrams} productName={foodId ? foods.find(food => food.id === foodId)?.name : log.foodName} /></label>
     <MealPicker value={meal} onChange={setMeal} meals={meals} />
     <p className="hint">Если меняется только вес, используются КБЖУ из сохранённой записи.</p>
     {error && <p className="error" role="alert">{error}</p>}
@@ -204,7 +205,7 @@ function App() {
   const [tab, setTab] = useState('diary'), [measurementEdit, setMeasurementEdit] = useState(null);
   const [mealName, setMealName] = useState('Приём пищи'), [mealEdit, setMealEdit] = useState(null), [quickProduct, setQuickProduct] = useState(false);
   const [recipeEdit, setRecipeEdit] = useState(null);
-  const gramsRef = useRef(null), addRef = useRef(null);
+  const addRef = useRef(null);
   const noticeTimer = useRef(null);
 
   useEffect(() => {
@@ -401,9 +402,9 @@ function App() {
           {selected.length > 0 && <form ref={addRef} className="portion-form" onSubmit={addFoods}>
             <MealPicker value={mealName} onChange={setMealName} meals={mealNames} required />
             <div className="portion-list-heading"><span>Выбранные продукты</span><span>Вес, г</span></div>
-            <div className="selected-portions">{selected.map((portion, index) => <div className="selected-portion" key={portion.id}>
+            <div className="selected-portions">{selected.map(portion => <div className="selected-portion" key={portion.id}>
               <label className="portion-name" htmlFor={`portion-${portion.id}`}>{portion.food?.name || portion.name}{!portion.food && <small className="danger-text">Удалён из базы</small>}</label>
-              <input id={`portion-${portion.id}`} ref={index === 0 ? gramsRef : undefined} type="text" inputMode="decimal" required autoComplete="off" placeholder="100" aria-label={`Вес ${portion.food?.name || portion.name}, г`} value={portion.grams} onChange={e => setPortions(current => current.map(item => item.id === portion.id ? { ...item, grams: e.target.value } : item))} onFocus={e => e.target.select()} />
+              <GramsInput id={`portion-${portion.id}`} label={`Вес ${portion.food?.name || portion.name}, г`} productName={portion.food?.name || portion.name} value={portion.grams} onChange={grams => setPortions(current => current.map(item => item.id === portion.id ? { ...item, grams } : item))} />
               <button type="button" className="icon-button" aria-label={`Убрать ${portion.food?.name || portion.name} из выбранных`} onClick={() => setPortions(current => current.filter(item => item.id !== portion.id))}>×</button>
             </div>)}</div>
             {preview && <p className="portion-preview"><span>Итого:</span><b>{format(preview.calories)} ккал</b><span>Б {format(preview.protein)}</span><span>Ж {format(preview.fat)}</span><span>У {format(preview.carbs)}</span></p>}
@@ -420,7 +421,7 @@ function App() {
         </section>
         </div>
         <div hidden={tab !== 'progress'}><Progress records={measurements} date={date} onEdit={openMeasurement} onDelete={day => setConfirmation({ kind: 'measurement', date: day, item: { name: `Замеры за ${day.split('-').reverse().join('.')}` } })} /></div>
-        <footer>Данные сохраняются на этом устройстве.<button className="text-button" onClick={saveBackup}>Скачать резервную копию</button><span className="app-version">Версия 13 · Готовые блюда</span></footer>
+        <footer>Данные сохраняются на этом устройстве.<button className="text-button" onClick={saveBackup}>Скачать резервную копию</button><span className="app-version">Версия 14 · Калькулятор граммов</span></footer>
       </main>
     </div>
     <div className="notifications" aria-live="polite">{notice && <div className="toast">✓ {notice}</div>}{error && <div className="toast error" role="alert"><span>{error}</span><button type="button" className="icon-button" aria-label="Скрыть сообщение" onClick={() => setError('')}>×</button></div>}</div>

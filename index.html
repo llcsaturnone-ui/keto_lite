@@ -179,7 +179,9 @@ footer button { display: block; margin: 4px auto 0; font-size: 11px !important; 
 .quick-food-modes .chip { flex: 1; font-size: 14px; }
 .quick-food-caption { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin: 10px 0 8px; font-size: 12px; color: #a1a1aa; }
 .quick-food-caption .text-button { padding-block: 0; min-height: 32px; font-size: 14px; }
-.food-carousel { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; touch-action: pan-y; }
+.food-carousel { position: relative; display: flex; gap: 10px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-behavior: smooth; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.food-carousel::-webkit-scrollbar { display: none; }
+.food-page { flex: 0 0 100%; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; align-content: start; scroll-snap-align: start; }
 .food-tile { position: relative; min-width: 0; background: #232326; border: 1px solid #3b3b43; border-radius: 12px; }
 .food-tile.selected { background: #163529; border-color: #34d399; box-shadow: inset 0 0 0 1px #34d399; }
 .food-tile > .food-select { width: 100%; min-height: 116px; height: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 8px 7px; border-radius: inherit; }
@@ -255,4 +257,29 @@ footer button { display: block; margin: 4px auto 0; font-size: 11px !important; 
 @media (min-width:600px) { body { padding: 26px 0; } .app { border: 1px solid #29292e; border-radius: 24px; min-height: calc(100dvh - 52px); overflow: hidden; } .modal { inset: 0; margin: auto; border: 1px solid #414149; border-radius: 22px; max-height: min(88dvh,850px); } }
 @media (max-width:359px) { .main-content { padding-inline: 12px; } .app-header { padding-inline: 16px; } .card { padding: 13px; } .macro-card { padding-inline: 11px; } .macro-value { font-size: 23px; } .food-row .row-actions { flex-direction: column; } .food-row .row-actions .icon-button { height: 33px; } .modal-body { padding-inline: 16px; } }
 @media (prefers-reduced-motion:reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
-</style><link rel="apple-touch-icon" sizes="180x180" href="icon-180.png"><link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="manifest" href="manifest.webmanifest"></head><body><div id="root"></div><noscript>Для работы дневника включите JavaScript в браузере.</noscript><script type="module" src="./assets/app-OM5CYQ4C.js"></script><script>if('serviceWorker' in navigator && location.protocol !== 'file:'){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(function(registration){registration.update().catch(function(){});}).catch(function(){});});}</script></body></html>
+
+.grams-input { cursor: pointer; caret-color: transparent; }
+.weight-calculator { position: fixed; inset: auto 0 0; margin: auto auto 0; width: min(100%, 480px); max-width: 100%; max-height: calc(100dvh - env(safe-area-inset-top) - 12px); overflow-y: auto; overscroll-behavior: contain; padding: 0 0 env(safe-area-inset-bottom); border: 1px solid #414149; border-bottom: 0; border-radius: 26px 26px 0 0; background: #18181b; color: #f4f4f5; box-shadow: 0 -16px 80px #0009; }
+.weight-calculator::backdrop { background: #000a; }
+.weight-sheet-handle { width: 35px; height: 4px; background: #48484f; border-radius: 4px; margin: 10px auto 5px; }
+.weight-calc-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 22px 8px; }
+.weight-calc-header > div { min-width: 0; }
+.weight-calc-header h2 { font-size: 18px; }
+.weight-calc-header p { margin-top: 6px; color: #a1a1aa; font-size: 14px; line-height: 1.4; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+.weight-expression { padding: 20px 24px 13px; min-height: 84px; text-align: right; font-size: clamp(24px, 7.8vw, 36px); line-height: 1.35; font-weight: 450; overflow-x: auto; white-space: nowrap; font-variant-numeric: tabular-nums; scrollbar-width: none; }
+.weight-expression::-webkit-scrollbar { display: none; }
+.weight-live-result { color: #92929d; }
+.weight-replace { background: #34d39920; border-radius: 5px; }
+.weight-caret { display: inline-block; vertical-align: -.08em; height: 1em; width: 2px; margin-left: 4px; background: #34d399; }
+.weight-calc-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 22px 14px; color: #a1a1aa; font-size: 14px; min-height: 48px; }
+.weight-calc-meta button { color: #6ee7b7; min-height: 40px; padding: 4px 0; font-size: 14px; }
+.weight-calc-meta > span { text-align: right; line-height: 1.4; }
+.weight-calc-meta .weight-calc-error { color: #fda4af; }
+.weight-operators { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); background: #2b2b32; border-block: 1px solid #ffffff0b; }
+.weight-operators button { min-height: 56px; padding: 0; font-size: 30px; font-weight: 400; }
+.weight-operators .weight-done { color: #6ee7b7; }
+.weight-number-pad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.weight-number-pad button { display: grid; place-items: center; height: clamp(48px, 9svh, 78px); font-size: 32px; font-weight: 400; background: #222227; border-right: 1px solid #ffffff03; border-bottom: 1px solid #ffffff03; padding: 0; }
+.weight-number-pad button:active { background: #393941; }
+@media (max-height: 640px) { .weight-calc-header { padding-block: 5px; } .weight-expression { min-height: 62px; padding-block: 12px; } .weight-calc-meta { padding-bottom: 6px; min-height: 40px; font-size: 12px; } .weight-operators button { min-height: 48px; } }
+</style><link rel="apple-touch-icon" sizes="180x180" href="icon-180.png"><link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="manifest" href="manifest.webmanifest"></head><body><div id="root"></div><noscript>Для работы дневника включите JavaScript в браузере.</noscript><script type="module" src="./assets/app-TI6NNILE.js"></script><script>if('serviceWorker' in navigator && location.protocol !== 'file:'){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(function(registration){registration.update().catch(function(){});}).catch(function(){});});}</script></body></html>

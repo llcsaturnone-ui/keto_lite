@@ -1,6 +1,7 @@
 import React, { useId, useState } from 'react';
 import { calculate, makeId, normalizeRecipe } from './core.mjs';
 import { QuickFoods, QuickProductForm } from './QuickFoods.jsx';
+import { GramsInput } from './GramsInput.jsx';
 
 const format = value => Number(value).toLocaleString('ru-RU', { maximumFractionDigits: 1 });
 
@@ -39,7 +40,7 @@ export function RecipeForm({ initial, foods, favorites, onFavorite, onAddFoods, 
         const food = foods.find(food => food.id === item.foodId);
         return <div className="selected-portion" key={item.foodId}>
           <label className="portion-name" htmlFor={`${formId}-${index}`}>{food?.name || item.foodName}{!food && <small className="danger-text">Удалён из базы</small>}</label>
-          <input id={`${formId}-${index}`} type="text" inputMode="decimal" required autoComplete="off" aria-label={`Вес ингредиента ${food?.name || item.foodName}, г`} value={item.grams} onChange={event => setIngredients(current => current.map(value => value.foodId === item.foodId ? { ...value, grams: event.target.value } : value))} onFocus={event => event.target.select()} />
+          <GramsInput id={`${formId}-${index}`} label={`Вес ингредиента ${food?.name || item.foodName}, г`} productName={food?.name || item.foodName} value={item.grams} onChange={grams => setIngredients(current => current.map(value => value.foodId === item.foodId ? { ...value, grams } : value))} />
           <button type="button" className="icon-button" aria-label={`Убрать ингредиент ${food?.name || item.foodName}`} onClick={() => setIngredients(current => current.filter(value => value.foodId !== item.foodId))}>×</button>
         </div>;
       })}</div></>}
